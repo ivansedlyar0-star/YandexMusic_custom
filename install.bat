@@ -7,7 +7,6 @@ echo ============================================
 
 echo Closing running instances of Yandex Music...
 taskkill /F /IM "YandexMusic.exe" >nul 2>nul
-timeout /t 1 /nobreak >nul
 
 where node >nul 2>nul
 if %errorlevel% neq 0 (
