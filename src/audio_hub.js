@@ -143,54 +143,6 @@
     const NUM_BARS = 64;
     let cavaValues = new Float32Array(NUM_BARS);
     let visualBars = new Float32Array(NUM_BARS);
-    let cavaProc = null;
-
-    if (hasNode && fs && path && os && child_process && readline) {
-      try {
-        const cavaConfPath = path.join(os.tmpdir(), 'ym_cava_desktop.conf');
-        const cavaConfContent = `[general]
-framerate = 60
-bars = ${NUM_BARS}
-[input]
-method = pulse
-source = auto
-[output]
-method = raw
-raw_target = /dev/stdout
-data_format = ascii
-ascii_max_range = 100
-bar_delimiter = 59
-frame_delimiter = 10
-[smoothing]
-noise_reduction = 75
-monstercat = 1
-gravity = 110
-`;
-        fs.writeFileSync(cavaConfPath, cavaConfContent, 'utf8');
-        cavaProc = child_process.spawn('cava', ['-p', cavaConfPath], {
-          stdio: ['ignore', 'pipe', 'ignore'],
-          detached: false
-        });
-
-        const rl = readline.createInterface({ input: cavaProc.stdout });
-        rl.on('line', (line) => {
-          if (!line) return;
-          const parts = line.split(';');
-          const sens = settings.cavaSensitivity / 100;
-          for (let i = 0; i < NUM_BARS; i++) {
-            const val = parseInt(parts[i], 10);
-            if (!isNaN(val)) {
-              cavaValues[i] = Math.min(100, val * sens);
-            }
-          }
-        });
-
-        cavaProc.on('error', () => {});
-      } catch (e) {
-        console.warn('Cava visualizer process error:', e);
-      }
-    }
-
     // Listen for CAVA stream via postMessage from IPC bridge
     if (typeof window !== 'undefined') {
       window.addEventListener('message', (event) => {
@@ -1444,11 +1396,8 @@ gravity = 110
     }
 
 
-    // Cleanup cava on exit
+    // Cleanup on exit
     window.addEventListener('beforeunload', () => {
-      if (cavaProc) {
-        try { cavaProc.kill(); } catch (e) {}
-      }
       if (animId) cancelAnimationFrame(animId);
     });
   }

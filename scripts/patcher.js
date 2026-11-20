@@ -259,49 +259,63 @@ function setupYmEnhancer(win) {
 
   let cavaProc = null;
   const isWindows = process.platform === 'win32';
-  const cavaBin = isWindows ? 'cava.exe' : (fs.existsSync('/usr/bin/cava') ? '/usr/bin/cava' : 'cava');
+  let cavaBin = null;
 
-  try {
-    const cavaTmpConf = path.join(os.tmpdir(), 'ym_cava_desktop.conf');
-    const inputMethod = isWindows ? 'wasapi' : 'pulse';
-    const conf = [
-      '[general]',
-      'bars = 64',
-      'framerate = 60',
-      '[input]',
-      \`method = \${inputMethod}\`,
-      'source = auto',
-      '[output]',
-      'method = raw',
-      'raw_target = /dev/stdout',
-      'data_format = ascii',
-      'ascii_max_range = 100',
-      'bar_delimiter = 59',
-      'frame_delimiter = 10',
-      '[smoothing]',
-      'noise_reduction = 70',
-      'monstercat = 1',
-      'gravity = 110',
-      ''
-    ].join('\\n');
-    fs.writeFileSync(cavaTmpConf, conf, 'utf8');
+  if (!isWindows) {
+    if (fs.existsSync('/usr/bin/cava')) cavaBin = '/usr/bin/cava';
+    else if (fs.existsSync('/usr/local/bin/cava')) cavaBin = '/usr/local/bin/cava';
+  } else {
+    const localCava = path.join(configDir, 'cava.exe');
+    if (fs.existsSync(localCava)) cavaBin = localCava;
+  }
 
-    cavaProc = spawn(cavaBin, ['-p', cavaTmpConf], { stdio: ['ignore', 'pipe', 'ignore'] });
-    let buf = '';
-    cavaProc.stdout.on('data', (chunk) => {
-      buf += chunk.toString('utf8');
-      const lines = buf.split('\\n');
-      buf = lines.pop();
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const vals = line.split(';').filter(Boolean).map(Number);
-        if (vals.length > 0 && !win.isDestroyed()) {
-          win.webContents.send('ym-cava-stream', vals);
-        }
+  if (cavaBin) {
+    try {
+      const cavaTmpConf = path.join(os.tmpdir(), 'ym_cava_desktop.conf');
+      const inputMethod = isWindows ? 'wasapi' : 'pulse';
+      const conf = [
+        '[general]',
+        'bars = 64',
+        'framerate = 60',
+        '[input]',
+        \`method = \${inputMethod}\`,
+        'source = auto',
+        '[output]',
+        'method = raw',
+        'raw_target = /dev/stdout',
+        'data_format = ascii',
+        'ascii_max_range = 100',
+        'bar_delimiter = 59',
+        'frame_delimiter = 10',
+        '[smoothing]',
+        'noise_reduction = 70',
+        'monstercat = 1',
+        'gravity = 110',
+        ''
+      ].join('\\n');
+      fs.writeFileSync(cavaTmpConf, conf, 'utf8');
+
+      cavaProc = spawn(cavaBin, ['-p', cavaTmpConf], { stdio: ['ignore', 'pipe', 'ignore'] });
+      let buf = '';
+      if (cavaProc && cavaProc.stdout) {
+        cavaProc.stdout.on('data', (chunk) => {
+          buf += chunk.toString('utf8');
+          const lines = buf.split('\\n');
+          buf = lines.pop();
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            const vals = line.split(';').filter(Boolean).map(Number);
+            if (vals.length > 0 && !win.isDestroyed()) {
+              win.webContents.send('ym-cava-stream', vals);
+            }
+          }
+        });
       }
-    });
-    cavaProc.on('error', () => {});
-  } catch (e) {}
+      if (cavaProc) {
+        cavaProc.on('error', () => {});
+      }
+    } catch (e) {}
+  }
 
   win.on('closed', () => {
     if (cavaProc) {
