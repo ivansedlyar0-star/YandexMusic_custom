@@ -1,0 +1,32 @@
+{
+  "name": "yandex-music-enhancer",
+  "version": "1.0.0",
+  "description": "Premium Glassmorphic Theme, Audio Studio Hub (EQ, Preamp, Vinyl), CAVA Visualizer, and Weightless Synced Lyrics for Yandex Music Desktop",
+  "main": "scripts/patcher.js",
+  "scripts": {
+    "install-mod": "node scripts/patcher.js install",
+    "uninstall-mod": "node scripts/patcher.js restore",
+    "restore": "node scripts/patcher.js restore",
+    "patch": "node scripts/patcher.js install"
+  },
+  "keywords": [
+    "yandex-music",
+    "theme",
+    "customization",
+    "glassmorphism",
+    "cava",
+    "visualizer",
+    "equalizer",
+    "lyrics",
+    "electron"
+  ],
+  "author": "Ivan & Antigravity",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/yandex-music-enhancer.git"
+  },
+  "devDependencies": {
+    "@electron/asar": "^3.2.14"
+  }
+}

@@ -1,0 +1,1722 @@
+/* ==========================================================================
+   Yandex Music Custom CSS - Minimalist Glassmorphism & System Theme Dock
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. HIDE PROMOS, ADS, KIDS & CONCERTS (CLEAN INTERFACE)
+   -------------------------------------------------------------------------- */
+/* Promo & Ad Banners (DO NOT hide WithTopBanner_root: it wraps the whole page) */
+[class*="AxeBanner"],
+[class*="SideAdvertBanner"],
+[class*="Content_withBrandedBanner"],
+[class*="PlaylistPageHeaderBranding"],
+[class*="WithBrandedEntity"],
+[class*="NavbarDesktopPlusBar"],
+[class*="NavbarDesktopAnimatedPlusBar"],
+[class*="NavbarDesktopAnimatedDownloadBar"],
+[class*="NavbarDesktopAnimatedShimmerBar"],
+[class*="PlusNavbarButton"],
+[class*="DownloadBar"],
+[class*="PromotionsCard"],
+[class*="AlbumPromoCard"],
+[class*="BaseAlbumPromo"],
+[class*="PromoLanding"],
+[class*="Trailer"],
+[class*="FreePlayerPlusNotification"],
+[class*="BestRecommendationsModal"],
+[class*="advDisclaimer"],
+[class*="AdvDisclaimer"],
+[class*="Paywall"],
+[class*="plusPaywall"],
+[class*="BuySubscription"] {
+  display: none !important;
+}
+
+/* Hide Kids and Concerts from navigation and search */
+a[href*="/kids"],
+a[href*="/concerts"],
+a[href$="/kids"],
+a[href$="/concerts"],
+li:has(> a[href*="/kids"]),
+li:has(> a[href*="/concerts"]),
+[data-test-id*="kids" i],
+[data-test-id*="concert" i],
+[class*="TopConcerts"],
+[class*="ConcertCard"],
+[class*="ArtistConcerts"],
+[class*="ConcertShimmer"],
+[class*="PageHeaderConcert"],
+[class*="CollectionKids"] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. MAIN PAGE: "МОЯ ВОЛНА" CENTERED & FLOATING CONTROLS
+   -------------------------------------------------------------------------- */
+
+/* Main Vibe Container */
+[class*="VibePage_root"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Center the Main Vibe interface & player controls */
+[class*="VibePage_meta"] {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+  padding: 0 1.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  overflow: hidden !important;
+}
+
+[class*="VibePage_entityMeta"],
+[class*="VibePage_entityMetaBody"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Restrain huge dynamic text so it doesn't overflow or get cut off */
+[class*="VibePage_text"] {
+  font-size: clamp(2rem, 5vw, 3.8rem) !important;
+  line-height: 1.15 !important;
+  max-width: 90% !important;
+  text-align: center !important;
+  word-break: break-word !important;
+}
+
+/* Fixed Centered Player Block: never overflow or shift horizontally on long titles */
+[class*="VibePage_playerBlock"],
+[class*="VibeBlock_root"],
+[class*="VibeBlock_controls"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Player Bar Container: strictly centered, max-width bounded */
+[class*="VibePlayerBar_root"] {
+  width: min(34rem, 90%) !important;
+  max-width: 90% !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Main Play / Pause Button in System Accent */
+[class*="VibePlayerControls_playButton"],
+[class*="PlayButtonWithCover_playButton"] {
+  background-color: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 20px rgba(235, 191, 137, 0.45) !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+}
+
+[class*="VibePlayerControls_playButton"]:hover,
+[class*="PlayButtonWithCover_playButton"]:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 0 6px 26px rgba(235, 191, 137, 0.6) !important;
+}
+
+[class*="VibePlayerControls_playButton"] svg,
+[class*="VibePlayerControls_playButton"] path,
+[class*="VibePlayerControls_playButton"] use {
+  fill: #1a0f07 !important;
+  color: #1a0f07 !important;
+}
+
+/* Player Controls row centered */
+[class*="VibePlayerControls_root"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+}
+
+/* Track info capsule pill */
+[class*="VibePlayerBar_progress"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  background: rgba(28, 18, 12, 0.72) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 30px !important;
+  padding: 4px 16px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Prevent long track title marquee from expanding the player block */
+[class*="VibePlayerbarMeta_root"],
+[class*="VibePlayerbarMeta_center"],
+[class*="VibePlayerbarMeta_trackName"],
+.rfm-marquee-container {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Centered & Uncropped Album Covers */
+[class*="VibePlayerBar_root"] [class*="AlbumCover_root"] {
+  position: absolute !important;
+  inset-block-end: calc(100% + 14px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 96px !important;
+  height: 96px !important;
+  z-index: 10 !important;
+}
+
+[class*="AlbumCover_coverContainer"] {
+  width: 96px !important;
+  height: 96px !important;
+  aspect-ratio: 1 / 1 !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  border-radius: 14px !important;
+}
+
+[class*="AlbumCover_link"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 14px !important;
+}
+
+[class*="AlbumCover_cover"],
+[class*="AlbumCover_link"] img,
+[class*="AlbumCover_root"] img {
+  position: absolute !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 14px !important;
+  opacity: 1 !important;
+}
+
+/* Hide Vibe Context Banner & Promotional Words Card */
+[class*="VibePage_context"],
+[class*="VibePage_words"],
+[class*="WordsCard_root"] {
+  display: none !important;
+}
+
+/* Floating Wave Tuning Capsule Pill ("плашечка в правом нижнем углу") */
+#ym-wave-tuning-pill {
+  position: fixed !important;
+  right: 24px !important;
+  bottom: 22px !important;
+  height: 40px !important;
+  padding: 0 16px 0 12px !important;
+  border-radius: 9999px !important;
+  background: rgba(30, 18, 12, 0.88) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(235, 191, 137, 0.35) !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  cursor: pointer !important;
+  z-index: 1000 !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+#ym-wave-tuning-pill:hover {
+  background: rgba(45, 28, 18, 0.96) !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+  box-shadow: 0 10px 28px rgba(235, 191, 137, 0.4) !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+body.wave-tuning-open #ym-wave-tuning-pill {
+  background: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  border-color: #ebbf89 !important;
+  box-shadow: 0 8px 28px rgba(235, 191, 137, 0.6) !important;
+}
+
+body.wave-tuning-open #ym-wave-tuning-pill svg {
+  fill: #1a0f07 !important;
+  color: #1a0f07 !important;
+}
+
+/* Wave Tuning Pill & Drawer: ONLY visible on Vibe Page, strictly hidden everywhere else */
+body:not(:has([class*="VibePage_root"])) #ym-wave-tuning-pill,
+body:has([class*="FullscreenPlayerDesktop_root"]) #ym-wave-tuning-pill,
+body:not(:has([class*="VibePage_root"])) [class*="WheelDesktop_root"],
+body:not(:has([class*="VibePage_root"])) [class*="VibePage_wheel"],
+body:has([class*="FullscreenPlayerDesktop_root"]) [class*="WheelDesktop_root"],
+body:has([class*="FullscreenPlayerDesktop_root"]) [class*="VibePage_wheel"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+
+/* Floating Weightless Drawer for Wave Tuning (Развертывание настройки волны) */
+[class*="WheelDesktop_root"],
+[class*="VibePage_wheel"] {
+  position: fixed !important;
+  right: 24px !important;
+  bottom: 125px !important;
+  left: auto !important;
+  top: auto !important;
+  width: 320px !important;
+  max-width: calc(100vw - 48px) !important;
+  height: 420px !important;
+  max-height: calc(100vh - 220px) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  z-index: 999 !important;
+  overflow: hidden !important; /* CRITICAL: prevent swiper slides from overflowing & stacking */
+  mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%) !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%) !important;
+  padding: 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transform: translateZ(0) !important;
+  will-change: transform, opacity !important;
+  contain: layout paint !important;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s ease !important;
+}
+
+[class*="WheelDesktop_wrapper"],
+[class*="WheelDesktopItem_root"],
+[class*="WheelDesktopItem_element"],
+[class*="WheelDesktopItem_shimmer"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body:not(.wave-tuning-open) [class*="WheelDesktop_root"],
+body:not(.wave-tuning-open) [class*="VibePage_wheel"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(32px) scale(0.92) translateZ(0) !important;
+}
+
+body.wave-tuning-open [class*="WheelDesktop_root"],
+body.wave-tuning-open [class*="VibePage_wheel"] {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateY(0) scale(1) translateZ(0) !important;
+}
+
+/* Glassy Genre Items & Smooth Swiping (GPU optimized, 60fps) */
+[class*="WheelItem_root"] {
+  background: rgba(22, 13, 8, 0.75) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  contain: layout style !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease !important;
+  cursor: pointer !important;
+  margin-bottom: 8px !important;
+}
+
+[class*="WheelItem_root"]:hover {
+  background: rgba(235, 191, 137, 0.22) !important;
+  border-color: rgba(235, 191, 137, 0.65) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(235, 191, 137, 0.35) !important;
+  transform: translateY(-2px) scale(1.02) translateZ(0) !important;
+}
+
+
+@media (max-width: 800px) {
+  #ym-wave-tuning-pill {
+    right: 24px !important;
+  }
+  [class*="WheelDesktop_root"],
+  [class*="VibePage_wheel"] {
+    right: 24px !important;
+    bottom: 120px !important;
+    width: 295px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. SIDEBAR: FLOATING CAPSULE DOCK (MATCHING SCREENSHOT)
+   -------------------------------------------------------------------------- */
+:root {
+  --navbar-full-width: 4.25rem !important;
+  --navbar-collapsed-width: 4.25rem !important;
+  --navbar-width: 4.25rem !important;
+}
+
+/* Sidebar rail */
+[class*="Navbar_root"],
+[class*="NavbarDesktop_root"] {
+  width: 4.25rem !important;
+  min-width: 4.25rem !important;
+  max-width: 4.25rem !important;
+  background: transparent !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
+  padding: 10px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* Logo at Top - Accent Colored */
+[class*="NavbarDesktop_logoWrapper"] {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 6px 0 16px 0 !important;
+  padding: 0 !important;
+}
+
+[class*="NavbarDesktop_logoLink"],
+[class*="NavbarDesktop_logo"] {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+[class*="NavbarDesktop_logo"] svg,
+[class*="NavbarDesktop_logo"] path,
+[class*="NavbarDesktop_logo"] use {
+  width: 28px !important;
+  height: 28px !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  fill: var(--sys-primary, #ebbf89) !important;
+}
+
+/* Hide collapse button & extra titles in logo header */
+[class*="NavbarDesktop_collapseButton"],
+[class*="NavbarDesktop_title"],
+[class*="NavbarDesktop_subTitle"],
+[class*="NavbarDesktop_pinsList"],
+[class*="NavbarDesktop_navigation"] [class*="nxMXCBiVfgH4oxds3f2y"],
+[class*="NavbarDesktop_title_collapsed"] {
+  display: none !important;
+}
+
+/* The Floating Capsule Container (Dock Pill matching screenshot) */
+[class*="NavbarDesktop_navigationGroup"],
+[class*="NavbarDesktop_navigation"] > ol,
+[class*="NavbarDesktop_navigation"] > ul {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 48px !important;
+  margin: 6px auto !important;
+  padding: 8px 4px !important;
+  background: rgba(38, 24, 16, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(235, 191, 137, 0.22) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Nav Item List Item */
+[class*="NavbarDesktop_navigationGroup"] li,
+[class*="NavbarDesktop_navigation"] li {
+  width: 40px !important;
+  height: 40px !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  list-style: none !important;
+}
+
+/* Nav Item Link Base */
+[class*="NavbarDesktop_navigationGroup"] a,
+[class*="NavbarDesktop_navigation"] a {
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 20px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  opacity: 0.75 !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[class*="NavbarDesktop_navigationGroup"] a svg,
+[class*="NavbarDesktop_navigation"] a svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* Inactive Hover State */
+[class*="NavbarDesktop_navigationGroup"] a:not([class*="Eg3pt5lTL33sOlxorSbN"]):hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  transform: scale(1.06) !important;
+}
+
+/* ACTIVE ITEM IN DOCK: Warm Pill Background matching screenshot */
+[class*="NavbarDesktop_navigationGroup"] a.Eg3pt5lTL33sOlxorSbN,
+[class*="NavbarDesktop_navigationGroup"] a[class*="Eg3pt5lTL33sOlxorSbN"],
+[class*="item_selected"],
+[class*="selected"],
+a[aria-current="page"] {
+  background: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  border-radius: 20px !important;
+  opacity: 1 !important;
+  box-shadow: 0 4px 16px rgba(235, 191, 137, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+/* Active Icon is Dark Inside the Warm Pill */
+[class*="NavbarDesktop_navigationGroup"] a.Eg3pt5lTL33sOlxorSbN svg,
+[class*="NavbarDesktop_navigationGroup"] a.Eg3pt5lTL33sOlxorSbN use,
+[class*="NavbarDesktop_navigationGroup"] a[class*="Eg3pt5lTL33sOlxorSbN"] svg,
+[class*="NavbarDesktop_navigationGroup"] a[class*="Eg3pt5lTL33sOlxorSbN"] use,
+[class*="item_selected"] svg,
+[class*="selected"] svg {
+  color: #1a0f07 !important;
+  fill: #1a0f07 !important;
+}
+
+/* User Profile Avatar at Bottom of Sidebar (Strictly Centered in Dock Rail) */
+[class*="NavbarDesktopUserWidget_userProfileContainer"],
+[class*="NavbarDesktopUserWidget_root"] {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 10px 0 !important;
+  padding-inline-start: 0 !important;
+  padding-inline-end: 0 !important;
+  margin: auto auto 12px auto !important;
+}
+
+[class*="NavbarDesktopUserWidget_userProfile"],
+[class*="UserProfile_root"] {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  margin-inline-end: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+[class*="UserID-Wrapper"],
+[class*="UserProfile_userId"],
+[class*="NavbarDesktopUserWidget_userId"] {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+}
+
+[class*="UserID-Wrapper"] button,
+.UserID-Account,
+[class*="UserProfile_userId"] > button,
+[class*="OfflineUserProfile_button"],
+[class*="UserIcon_root"] {
+  margin: 0 auto !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(235, 191, 137, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+[class*="NavbarDesktopUserWidget_userMeta"],
+[class*="UserProfile_meta"],
+[class*="UserProfile_userName"] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. SYSTEM THEME GLASSMORPHISM & GENERAL UI
+   -------------------------------------------------------------------------- */
+html, body {
+  background-color: var(--sys-glass-bg, rgba(5, 3, 1, 0.70)) !important;
+  color: var(--sys-text, #f4e3d1) !important;
+}
+
+/* Smooth Tab / Page Transitions & Content Crossfade */
+main,
+[class*="Content_root"],
+[class*="Content_main"],
+[class*="CommonLayout_content"],
+[class*="VibePage_root"] {
+  background: transparent !important;
+  animation: ymPageFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes ymPageFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.993);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Top Header Bar (never style FullscreenPlayer header!) */
+header:not([class*="FullscreenPlayerDesktop_header"]):not([class*="fullscreenPlayer"]),
+[class*="Header_root"]:not([class*="FullscreenPlayerDesktop_header"]):not([class*="fullscreenPlayer"]),
+[class*="NavbarDesktop_header"],
+[class*="TitleBar_root"]:not([class*="FullscreenPlayerDesktop"]) {
+  background: var(--sys-glass-surface, rgba(10, 6, 3, 0.60)) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Fullscreen Player Header & Close Button: completely transparent */
+[class*="FullscreenPlayerDesktop_header"],
+[class*="FullscreenPlayerDesktop_closeButton"] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Bottom Player Bar: Vibe Player Bar is fully transparent (no dark background box) */
+[class*="VibePlayerBar_root"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Standard Bottom Player Bar (scope strictly to player bar, NEVER to track rows!) */
+[class*="PlayerBarDesktopWithBackgroundProgressBar_root"],
+[class*="PlayerBarDesktop_root"],
+[class*="PlayerBar_root"]:not([class*="VibePlayerBar_root"]),
+footer {
+  background: var(--sys-glass-player, rgba(10, 6, 3, 0.78)) !important;
+  backdrop-filter: blur(30px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(180%) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Track rows, playlist cells & queue items: completely transparent without dark boxes */
+[class*="CommonControlsBar_root"],
+[class*="TrackPlaylist_controlsBarCell"],
+[class*="ControlsBarCell"],
+[class*="controlsBarCell"],
+[class*="PlayQueue_item"] [class*="CommonControlsBar_root"],
+[class*="Track_controls"],
+[class*="Track_rightPart"],
+[class*="Track_actions"] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+
+/* Volume Slider in Player: hide ghost rectangle until hovered */
+[class*="ChangeVolume_sliderContainer"],
+[class*="ChangeVolume_wrapperSlider"] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 0.2s ease, visibility 0.2s ease !important;
+}
+
+[class*="ChangeVolume_root"]:hover [class*="ChangeVolume_sliderContainer"],
+[class*="ChangeVolume_root"]:hover [class*="ChangeVolume_wrapperSlider"],
+[class*="ChangeVolume_sliderContainer"]:hover,
+[class*="ChangeVolume_wrapperSlider"]:hover {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Search Bar */
+[class*="SearchInput"],
+input[type="search"],
+[class*="Search_root"] input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+  color: var(--sys-text, #f4e3d1) !important;
+  backdrop-filter: blur(12px) !important;
+  transition: all 0.2s ease !important;
+}
+
+[class*="SearchInput"]:focus-within,
+input[type="search"]:focus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+  box-shadow: 0 0 12px rgba(235, 191, 137, 0.25) !important;
+}
+
+/* Minimalist Glass Cards */
+[class*="EntityCard_root"],
+[class*="Card_root"],
+[class*="TrackCard_root"],
+[class*="CollectionCard_root"] {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
+}
+
+[class*="EntityCard_root"]:hover,
+[class*="Card_root"]:hover,
+[class*="TrackCard_root"]:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Modals, Popovers, Context Menus */
+[class*="Menu_root"],
+[class*="Popover_root"],
+[class*="Modal_root"],
+[class*="Tooltip_root"],
+[class*="Select_menu"],
+[class*="VibeSettings_popover"] {
+  background: var(--sys-glass-popover, rgba(22, 14, 9, 0.92)) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1px solid rgba(235, 191, 137, 0.2) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Minimalist Scrollbars */
+::-webkit-scrollbar {
+  width: 5px !important;
+  height: 5px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 3px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sys-primary, #ebbf89) !important;
+}
+
+/* Sliders */
+[class*="Slider_progress"],
+[class*="ProgressBar_progress"] {
+  background: var(--sys-primary, #ebbf89) !important;
+  border-radius: 2px !important;
+}
+
+[class*="Slider_thumb"] {
+  background: var(--sys-primary, #ebbf89) !important;
+  box-shadow: 0 0 8px var(--sys-primary, rgba(235, 191, 137, 0.6)) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. CAVA EQUALIZER VISUALIZER (BOTTOM COLUMNS)
+   -------------------------------------------------------------------------- */
+#ym-cava-container {
+  position: fixed !important;
+  left: 4.25rem !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  height: 90px !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+  overflow: hidden !important;
+  transition: opacity 0.3s ease !important;
+}
+
+#ym-cava-container.ym-cava-top {
+  left: 4.25rem !important;
+  right: 0 !important;
+  top: 32px !important;
+  bottom: auto !important;
+  height: 85px !important;
+}
+
+#ym-cava-container.ym-cava-center {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: min(580px, 90%) !important;
+}
+
+#ym-cava-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. RIGHT-SIDE STUDIO HUB (НАУШНИКИ, ЭКВАЛАЙЗЕР, КАСТОМ)
+   -------------------------------------------------------------------------- */
+#ym-hub-toggle-pill {
+  position: fixed !important;
+  right: 24px !important;
+  top: 44px !important;
+  height: 38px !important;
+  padding: 0 16px 0 12px !important;
+  border-radius: 9999px !important;
+  background: rgba(30, 18, 12, 0.88) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(235, 191, 137, 0.35) !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  cursor: pointer !important;
+  z-index: 1000 !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+#ym-hub-toggle-pill:hover {
+  background: rgba(45, 28, 18, 0.96) !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+  box-shadow: 0 10px 28px rgba(235, 191, 137, 0.4) !important;
+  transform: translateY(-2px) scale(1.03) !important;
+}
+
+#ym-hub-toggle-pill.active {
+  background: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  border-color: #ebbf89 !important;
+  box-shadow: 0 8px 28px rgba(235, 191, 137, 0.6) !important;
+}
+
+#ym-hub-toggle-pill.active svg {
+  fill: #1a0f07 !important;
+}
+
+/* Studio Hub Panel Container */
+#ym-hub-panel {
+  position: fixed !important;
+  right: 24px !important;
+  top: 90px !important;
+  width: 330px !important;
+  max-width: calc(100vw - 48px) !important;
+  max-height: calc(100vh - 108px) !important;
+  background: rgba(22, 13, 8, 0.94) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid rgba(235, 191, 137, 0.25) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  z-index: 1001 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s ease !important;
+}
+
+.ym-hub-closed #ym-hub-panel {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-16px) scale(0.96) !important;
+}
+
+.ym-hub-open #ym-hub-panel {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+@media (max-width: 800px) {
+  #ym-hub-toggle-pill {
+    right: 18px !important;
+  }
+  #ym-hub-panel {
+    right: 18px !important;
+    width: 295px !important;
+  }
+}
+
+/* In Fullscreen Player, shift Sound & Custom pill and panel to the left of the close button */
+body:has([class*="FullscreenPlayerDesktop_root"]) #ym-hub-toggle-pill {
+  right: 104px !important;
+  top: 50px !important;
+}
+body:has([class*="FullscreenPlayerDesktop_root"]) #ym-hub-panel {
+  right: 104px !important;
+  top: 96px !important;
+}
+
+
+/* Header & Segmented Tabs */
+.ym-hub-header {
+  padding: 14px 16px 10px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  background: rgba(10, 6, 3, 0.4) !important;
+}
+
+.ym-hub-title-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.ym-hub-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  color: var(--sys-primary, #ebbf89) !important;
+}
+
+.ym-hub-close-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: none !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 50% !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.ym-hub-close-btn:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+  transform: scale(1.08) !important;
+}
+
+.ym-hub-tabs {
+  display: flex !important;
+  align-items: center !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+  border-radius: 9999px !important;
+  padding: 3px !important;
+  gap: 3px !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.ym-tab-btn {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 6px 4px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  font-size: 0.76rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.ym-tab-btn:hover {
+  color: #fff !important;
+}
+
+.ym-tab-btn.active {
+  background: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(235, 191, 137, 0.4) !important;
+}
+
+.ym-tab-btn.active svg {
+  fill: #1a0f07 !important;
+}
+
+/* Tab Scrollable Body */
+.ym-hub-body {
+  padding: 12px 16px !important;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 200px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.ym-hub-body::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.ym-hub-body::-webkit-scrollbar-thumb {
+  background: rgba(235, 191, 137, 0.25) !important;
+  border-radius: 4px !important;
+}
+
+.ym-hub-body::-webkit-scrollbar-thumb:hover {
+  background: var(--sys-primary, #ebbf89) !important;
+}
+
+.ym-section-label {
+  font-size: 0.74rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  margin-bottom: 6px !important;
+}
+
+/* Headphone Profiles Grid */
+.ym-profile-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+
+.ym-profile-chip {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 10px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-align: left !important;
+}
+
+.ym-profile-chip:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ym-profile-chip.active {
+  background: rgba(235, 191, 137, 0.14) !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+  box-shadow: 0 0 16px rgba(235, 191, 137, 0.2) !important;
+}
+
+.ym-chip-icon {
+  font-size: 1.1rem !important;
+}
+
+.ym-chip-name {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: var(--sys-text, #f4e3d1) !important;
+  line-height: 1.2 !important;
+}
+
+.ym-chip-sub {
+  font-size: 0.68rem !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  line-height: 1.2 !important;
+}
+
+/* Control Cards & Sliders */
+.ym-control-card {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 14px !important;
+  padding: 10px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.ym-ctrl-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.ym-ctrl-title {
+  display: flex !important;
+  flex-direction: column !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  color: var(--sys-text, #f4e3d1) !important;
+  gap: 2px !important;
+}
+
+.ym-ctrl-val {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  color: var(--sys-primary, #ebbf89) !important;
+}
+
+/* Switch */
+.ym-switch {
+  position: relative !important;
+  display: inline-block !important;
+  width: 36px !important;
+  height: 20px !important;
+  flex-shrink: 0 !important;
+}
+
+.ym-switch input {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.ym-slider-round {
+  position: absolute !important;
+  cursor: pointer !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border-radius: 20px !important;
+}
+
+.ym-slider-round:before {
+  position: absolute !important;
+  content: "" !important;
+  height: 14px !important;
+  width: 14px !important;
+  left: 3px !important;
+  bottom: 3px !important;
+  background-color: white !important;
+  transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border-radius: 50% !important;
+}
+
+.ym-switch input:checked + .ym-slider-round {
+  background-color: var(--sys-primary, #ebbf89) !important;
+}
+
+.ym-switch input:checked + .ym-slider-round:before {
+  transform: translateX(16px) !important;
+  background-color: #1a0f07 !important;
+}
+
+/* Horizontal Range Slider */
+.ym-range-slider {
+  -webkit-appearance: none !important;
+  width: 100% !important;
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  outline: none !important;
+  margin: 6px 0 2px 0 !important;
+}
+
+.ym-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: var(--sys-primary, #ebbf89) !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 10px rgba(235, 191, 137, 0.7) !important;
+  transition: transform 0.15s ease !important;
+}
+
+.ym-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2) !important;
+}
+
+.ym-range-slider:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
+/* Vinyl Player Showcase in Equalizer */
+.ym-vinyl-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  padding: 8px 12px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.ym-vinyl-record-wrap {
+  position: relative !important;
+  width: 74px !important;
+  height: 74px !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease !important;
+}
+
+.ym-vinyl-record-wrap:hover {
+  transform: scale(1.04) !important;
+}
+
+.ym-vinyl-disc {
+  width: 74px !important;
+  height: 74px !important;
+  border-radius: 50% !important;
+  position: relative !important;
+  background: radial-gradient(circle, #282828 0%, #121212 24%, #1f1f1f 25%, #0f0f0f 36%, #1b1b1b 37%, #0c0c0c 52%, #181818 53%, #080808 72%, #141414 73%, #020202 100%) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 16px rgba(235, 191, 137, 0.3) !important;
+  animation: ym-vinyl-rotate 4s linear infinite !important;
+  overflow: hidden !important;
+}
+
+/* Conical specular reflection on vinyl grooves */
+.ym-vinyl-disc::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 50% !important;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.08) 0deg,
+    transparent 55deg,
+    rgba(255, 255, 255, 0.15) 90deg,
+    transparent 135deg,
+    rgba(255, 255, 255, 0.08) 180deg,
+    transparent 235deg,
+    rgba(255, 255, 255, 0.15) 270deg,
+    transparent 325deg,
+    rgba(255, 255, 255, 0.08) 360deg
+  ) !important;
+  pointer-events: none !important;
+}
+
+/* Center vinyl label in theme accent color */
+.ym-vinyl-label {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, var(--sys-primary, #ebbf89) 0%, rgba(150, 100, 50, 0.95) 100%) !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 0 10px var(--sys-primary, #ebbf89) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.ym-vinyl-cover-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  display: block !important;
+}
+
+.ym-vinyl-spindle {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #080402 !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8) !important;
+  z-index: 2 !important;
+}
+
+/* Stylus Tonearm */
+.ym-vinyl-tonearm {
+  position: absolute !important;
+  top: 2px !important;
+  right: 0px !important;
+  width: 26px !important;
+  height: 40px !important;
+  pointer-events: none !important;
+  transform-origin: 22px 4px !important;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  z-index: 4 !important;
+}
+
+.ym-tonearm-pivot {
+  position: absolute !important;
+  right: 0 !important;
+  top: 0 !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #e0e0e0 0%, #777 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6) !important;
+}
+
+.ym-tonearm-bar {
+  position: absolute !important;
+  right: 4px !important;
+  top: 6px !important;
+  width: 2px !important;
+  height: 25px !important;
+  background: linear-gradient(to bottom, #d5d5d5, #888) !important;
+  border-radius: 2px !important;
+  transform: rotate(20deg) !important;
+  transform-origin: top center !important;
+}
+
+.ym-tonearm-head {
+  position: absolute !important;
+  left: 3px !important;
+  bottom: 3px !important;
+  width: 7px !important;
+  height: 10px !important;
+  background: var(--sys-primary, #ebbf89) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Vinyl rotation animation */
+@keyframes ym-vinyl-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ym-vinyl-playing .ym-vinyl-disc {
+  animation-play-state: running !important;
+}
+
+.ym-vinyl-playing .ym-vinyl-tonearm {
+  transform: rotate(16deg) !important;
+}
+
+.ym-vinyl-paused .ym-vinyl-disc {
+  animation-play-state: paused !important;
+}
+
+.ym-vinyl-paused .ym-vinyl-tonearm {
+  transform: rotate(-18deg) !important;
+}
+
+/* Curve alongside vinyl */
+.ym-vinyl-curve-wrap {
+  flex: 1 !important;
+  height: 74px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Equalizer Curve SVG inside card */
+.ym-eq-curve-container {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.ym-eq-curve-svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+
+/* Presets horizontal scroll */
+.ym-preset-scroll {
+  display: flex !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  padding-bottom: 4px !important;
+  margin: 8px 0 !important;
+}
+
+.ym-preset-chip {
+  padding: 5px 12px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  font-size: 0.74rem !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.ym-preset-chip:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+}
+
+.ym-preset-chip.active {
+  background: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  font-weight: 600 !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+}
+
+/* Vertical Sliders Row */
+.ym-eq-sliders-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 16px !important;
+  padding: 12px 8px !important;
+  gap: 4px !important;
+}
+
+.ym-eq-col {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex: 1 !important;
+}
+
+.ym-eq-badge {
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  height: 14px !important;
+}
+
+.ym-slider-track-wrap {
+  height: 110px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ym-eq-vertical-slider {
+  -webkit-appearance: slider-vertical !important;
+  writing-mode: bt-lr !important;
+  width: 16px !important;
+  height: 105px !important;
+  cursor: pointer !important;
+  accent-color: var(--sys-primary, #ebbf89) !important;
+}
+
+.ym-eq-freq {
+  font-size: 0.65rem !important;
+  color: var(--sys-subtext, #b8a999) !important;
+}
+
+/* EQ Footer */
+.ym-eq-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-top: 8px !important;
+  padding: 6px 2px !important;
+}
+
+.ym-preamp-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+}
+
+.ym-preamp-label {
+  font-size: 0.74rem !important;
+  color: var(--sys-subtext, #b8a999) !important;
+}
+
+.ym-preamp-slider {
+  flex: 1 !important;
+  max-width: 100px !important;
+}
+
+.ym-preamp-val {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  min-width: 36px !important;
+}
+
+.ym-reset-eq-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  font-size: 0.72rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.ym-reset-eq-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+/* Custom Tab Color Grid */
+.ym-color-grid {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 4px 0 !important;
+}
+
+.ym-color-circle {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: 2px solid transparent !important;
+  cursor: pointer !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.ym-color-circle:hover {
+  transform: scale(1.15) !important;
+}
+
+.ym-color-circle.active {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6) !important;
+  transform: scale(1.18) !important;
+}
+
+.ym-cava-mode-row {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. WEIGHTLESS FLOATING LYRICS (НЕВЕСОМЫЙ ТЕКСТ ПЕСНИ ПОД «МОЯ ВОЛНА»)
+   -------------------------------------------------------------------------- */
+#ym-vibe-lyrics {
+  position: fixed !important;
+  left: calc(50% + 2.125rem) !important;
+  top: 46% !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(560px, 86vw) !important;
+  height: 270px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: none !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth !important;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%) !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%) !important;
+  padding: 30px 10px !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  z-index: 25 !important;
+  transition: opacity 0.35s ease, transform 0.35s ease !important;
+}
+
+/* Vibe Lyrics: ONLY displayed when on Vibe page AND not in Fullscreen player */
+body.ym-lyrics-mode-open:has([class*="VibePage_root"]):not(:has([class*="FullscreenPlayerDesktop_root"])) #ym-vibe-lyrics {
+  display: flex !important;
+}
+
+body:not(:has([class*="VibePage_root"])) #ym-vibe-lyrics,
+body:has([class*="FullscreenPlayerDesktop_root"]) #ym-vibe-lyrics {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+
+#ym-vibe-lyrics::-webkit-scrollbar {
+  display: none !important;
+}
+
+.ym-lyrics-line {
+  padding: 8px 16px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 1.05rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.ym-lyrics-line:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.ym-lyrics-line.active {
+  color: var(--sys-primary, #ebbf89) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  transform: scale(1.06) !important;
+  text-shadow: 0 0 24px rgba(235, 191, 137, 0.8) !important;
+}
+
+.ym-lyrics-empty {
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-size: 0.95rem !important;
+  margin-top: 80px !important;
+}
+
+/* Hide album cover AND author avatars / covers when lyrics mode is open */
+body.ym-lyrics-mode-open [class*="AlbumCover_root"],
+body.ym-lyrics-mode-open [class*="VibeArtistCover"],
+body.ym-lyrics-mode-open [class*="VibePage_artistCover"],
+body.ym-lyrics-mode-open [class*="VibeDynamicArtists"],
+body.ym-lyrics-mode-open [class*="ArtistAvatar"],
+body.ym-lyrics-mode-open [class*="ArtistsAvatars"],
+body.ym-lyrics-mode-open [class*="SeparatedArtists"],
+body.ym-lyrics-mode-open [class*="VibePage_artists"],
+body.ym-lyrics-mode-open [class*="VibePage_dynamicArtists"],
+body.ym-lyrics-mode-open [class*="VibeSmallView_root"] {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: scale(0.75) !important;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease !important;
+}
+
+/* Lyrics toggle button on the player bar (слегка левее с запасом до кнопки «...») */
+#ym-lyrics-toggle-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--sys-subtext, #b8a999) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  margin-left: 2px !important;
+  margin-right: 8px !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
+}
+
+#ym-lyrics-toggle-btn:hover {
+  background: rgba(235, 191, 137, 0.2) !important;
+  color: var(--sys-primary, #ebbf89) !important;
+  border-color: var(--sys-primary, #ebbf89) !important;
+  transform: scale(1.08) !important;
+}
+
+#ym-lyrics-toggle-btn.active {
+  background: var(--sys-primary, #ebbf89) !important;
+  color: #1a0f07 !important;
+  border-color: #ebbf89 !important;
+  box-shadow: 0 0 12px rgba(235, 191, 137, 0.6) !important;
+}
+
+/* Injected lyrics menu item in context menu */
+.ym-lyrics-menu-btn {
+  color: var(--sys-primary, #ebbf89) !important;
+  font-weight: 600 !important;
+}
+
+/* VIBE BACKGROUND AURA CANVAS & LAYOUT - ALWAYS strictly follows theme */
+[class*="DefaultLayout_rootNewVibe"] {
+  background: var(--sys-vibe-bg, radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--sys-primary, #ebbf89) 20%, transparent) 0%, #050507 75%)) !important;
+  transition: background 0.5s ease !important;
+}
+
+[class*="VibeWidgetAnimation_root"] canvas,
+[class*="VibeAnimation_root"] canvas,
+[class*="VibeWidgetAnimation_canvas"] {
+  filter: var(--sys-vibe-filter, grayscale(100%) sepia(100%) hue-rotate(355deg) saturate(2.4) brightness(0.95)) !important;
+  opacity: var(--sys-vibe-opacity, 0.9) !important;
+  transition: filter 0.5s ease, opacity 0.5s ease !important;
+}
+
+
