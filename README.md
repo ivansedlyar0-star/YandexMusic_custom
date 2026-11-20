@@ -43,34 +43,52 @@
 
 ---
 
-## 🚀 Установка
+## 📋 Предварительные требования
+
+Перед установкой модификации убедитесь, что на компьютере установлены:
+
+1. **Официальное приложение Яндекс Музыка (Desktop)**:
+   - **Windows:** [Скачать с официального сайта](https://music.yandex.ru/download) или установить из Microsoft Store.
+   - **Linux:** Установить через пакетный менеджер (AUR: `yay -S yandex-music-electron`, Deb-пакет или Flatpak).
+2. **Среда Node.js** (версия 18+):
+   - **Windows:** Скачать установщик с [nodejs.org](https://nodejs.org) (рекомендуется версия **LTS**) или в терминале: `winget install OpenJS.NodeJS`
+   - **Linux:** `sudo pacman -S nodejs npm` / `sudo apt install nodejs npm`
+
+---
+
+## 🚀 Пошаговая установка
+
+### 🪟 Windows (Установка с нуля)
+
+1. **Скачайте проект:**
+   - Нажмите зеленую кнопку **`< > Code`** вверху этой страницы и выберите **`Download ZIP`**.
+2. **Распакуйте архив:**
+   - Кликните правой кнопкой мыши по скачанному архиву `YandexMusic_custom-main.zip` ➔ **«Извлечь всё...»**.
+3. **Запустите установщик:**
+   - Откройте распакованную папку и **дважды кликните по файлу `install.bat`**.
+   - *(Или запустите PowerShell в этой папке: `powershell -ExecutionPolicy Bypass -File install.ps1`).*
+4. **Готово!**
+   - Патчер автоматически найдет `app.asar` Яндекс Музыки, сохранит резервную копию `app.asar.orig`, внедрит мод и создаст файлы темы.
+   - Запустите Яндекс Музыку и наслаждайтесь!
+
+---
 
 ### 🐧 Linux / macOS
 
-1. Убедитесь, что установлен **Node.js** (версии 18 или новее).
-2. *(Опционально)* Для аппаратного аудио-анализатора установите CAVA:
-   - Arch Linux: `sudo pacman -S cava`
+1. Склонируйте репозиторий и перейдите в папку:
+   ```bash
+   git clone https://github.com/ivansedlyar0-star/YandexMusic_custom.git
+   cd YandexMusic_custom
+   ```
+2. *(Опционально)* Для работы системного спектрографа установите CAVA:
+   - Arch Linux / CachyOS: `sudo pacman -S cava`
    - Ubuntu / Debian: `sudo apt install cava`
    - Fedora: `sudo dnf install cava`
 3. Запустите скрипт установки:
    ```bash
    ./install.sh
    ```
-   *(Или `npm run install-mod`)*
-
----
-
-### 🪟 Windows
-
-1. Убедитесь, что установлен [Node.js](https://nodejs.org).
-2. Запустите установку одним из двух способов:
-   - **Способ 1:** Дважды кликните по файлу **`install.bat`** в Проводнике.
-   - **Способ 2:** Откройте PowerShell и выполните:
-     ```powershell
-     powershell -ExecutionPolicy Bypass -File install.ps1
-     ```
-
-Патчер автоматически найдет `app.asar` Яндекс Музыки, сохранит резервную копию `app.asar.orig`, внедрит модули и скопирует стили и скрипты в папку конфигурации.
+   *(Патчер автоматически сделает бэкап и установит все компоненты).*
 
 ---
 

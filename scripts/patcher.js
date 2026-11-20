@@ -439,8 +439,16 @@ function escapeRegex(string) {
 function install(options) {
   const asarPath = findAppAsar(options.appPath);
   if (!asarPath) {
-    error('Could not find Yandex Music app.asar!');
-    console.log('\nPlease specify the path using: --app-path <path to app.asar>');
+    error('Could not find Yandex Music (app.asar)!');
+    console.log('\nMake sure official Yandex Music Desktop is installed on your computer:');
+    if (process.platform === 'win32') {
+      console.log('  👉 Download for Windows: https://music.yandex.ru/download');
+      console.log('     (or install via Microsoft Store)');
+    } else {
+      console.log('  👉 Install on Linux: yay -S yandex-music-electron (AUR), deb package or Flatpak');
+    }
+    console.log('\nIf installed in a custom directory, run:');
+    console.log('  node scripts/patcher.js install --app-path "path/to/resources/app.asar"\n');
     process.exit(1);
   }
 
