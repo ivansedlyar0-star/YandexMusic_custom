@@ -246,6 +246,7 @@
           if (playBtn) {
             const label = (playBtn.getAttribute('aria-label') || '').toLowerCase();
             isPlaying = label.includes('пауз') || label.includes('pause') ||
+                        playBtn.classList.toString().includes('playing') ||
                         !!playBtn.querySelector('[class*="Pause"]') ||
                         !!playBtn.querySelector('svg[data-icon*="pause"]');
           }
@@ -286,13 +287,19 @@
 
         animId = requestAnimationFrame(renderCava);
 
-        if (!cachedWidth || !cachedHeight) return;
+        if (cavaContainer.style.display !== 'block') {
+          cavaContainer.style.display = 'block';
+          resizeCanvas();
+        }
+
+        if (!cachedWidth || !cachedHeight) {
+          resizeCanvas();
+          if (!cachedWidth || !cachedHeight) return;
+        }
 
         // Cap frame rate to ~60 FPS
         if (timestamp - lastFrameTime < 16) return;
         lastFrameTime = timestamp;
-
-        if (cavaContainer.style.display !== 'block') cavaContainer.style.display = 'block';
 
         ctx.clearRect(0, 0, cachedWidth, cachedHeight);
 
@@ -1327,22 +1334,25 @@
 
         lyricsBtn.classList.toggle('active', document.body.classList.contains('ym-lyrics-mode-open'));
 
-        // Locate the 3-dots "More" button in player controls across all page variants
-        const moreBtn = document.querySelector('[class*="VibePlayerControls"] [class*="moreButton"]') ||
+        // Locate the 3-dots "More" button in player bar across all page variants
+        const ctxBtn = document.querySelector('button[aria-label*="Контекст"]') ||
+                        document.querySelector('button[aria-label*="меню"]') ||
                         document.querySelector('[class*="PlayerBarDesktop_moreButton"]') ||
                         document.querySelector('[class*="trackContextMenuIcon"]') ||
                         document.querySelector('[class*="settingsButton"]') ||
-                        document.querySelector('[class*="VibePlayerControls"] button:last-child') ||
-                        document.querySelector('[class*="ControlsBar"] button:last-child') ||
+                        document.querySelector('[class*="VibePlayerControls"] [class*="moreButton"]') ||
                         document.querySelector('button[aria-label*="Действия"]') ||
-                        document.querySelector('button[aria-label*="меню"]') ||
-                        document.querySelector('button[aria-label*="контекст"]') ||
                         document.querySelector('button[aria-label*="ещё"]') ||
                         document.querySelector('button[data-test-id*="MORE"]');
 
-        if (moreBtn && moreBtn.parentElement) {
-          if (lyricsBtn.parentElement !== moreBtn.parentElement || lyricsBtn.nextElementSibling !== moreBtn) {
-            moreBtn.parentElement.insertBefore(lyricsBtn, moreBtn);
+        if (ctxBtn) {
+          const target = (ctxBtn.parentElement && ctxBtn.parentElement.parentElement && ctxBtn.parentElement.parentElement.classList.contains('VibePlayerBar_progress__Cri6E'))
+            ? ctxBtn.parentElement
+            : ctxBtn;
+          if (target && target.parentElement) {
+            if (lyricsBtn.parentElement !== target.parentElement || lyricsBtn.nextElementSibling !== target) {
+              target.parentElement.insertBefore(lyricsBtn, target);
+            }
           }
         }
       };

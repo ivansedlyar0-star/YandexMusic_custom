@@ -48,7 +48,8 @@ function killRunningApp() {
     } catch (e) {}
   } else if (process.platform === 'linux') {
     try {
-      execSync('killall -9 yandex-music yandex-music-electron 2>/dev/null', { stdio: 'ignore' });
+      execSync('pkill -9 -f yandexmusic 2>/dev/null || true', { stdio: 'ignore' });
+      execSync('killall -9 yandexmusic yandex-music yandex-music-electron 2>/dev/null || true', { stdio: 'ignore' });
     } catch (e) {}
   } else if (process.platform === 'darwin') {
     try {
