@@ -11,6 +11,19 @@
       if (window.__ymAudioHubInitialized) return;
       window.__ymAudioHubInitialized = true;
     }
+
+    // Capture active HTMLMediaElement instance whenever it plays
+    let capturedAudio = null;
+    if (typeof HTMLMediaElement !== 'undefined' && !HTMLMediaElement.prototype.__ymHooked) {
+      HTMLMediaElement.prototype.__ymHooked = true;
+      const origPlay = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () {
+        capturedAudio = this;
+        window.__ymCapturedAudio = this;
+        return origPlay.apply(this, arguments);
+      };
+    }
+
     const hasNode = typeof require === 'function';
     let fs = null, path = null, os = null, child_process = null, readline = null;
     if (hasNode) {
@@ -122,34 +135,55 @@
 
     // Apply custom theme variables
     const applyTheme = () => {
-      if (typeof document !== 'undefined' && document.documentElement) {
-        const theme = settings.themeColor || '#ebbf89';
-        const docStyle = document.documentElement.style;
-        docStyle.setProperty('--sys-primary', theme, 'important');
-        docStyle.setProperty('--sys-primary-hover', theme, 'important');
-        docStyle.setProperty('--ym-controls-color-primary-default-enabled', theme, 'important');
-        docStyle.setProperty('--ym-controls-color-primary-default-hovered', theme, 'important');
-        docStyle.setProperty('--ym-controls-color-primary-outline-selected_stroke', theme, 'important');
-        docStyle.setProperty('--ym-slider-color-primary-enabled', theme, 'important');
-        docStyle.setProperty('--ym-slider-color-primary-progress', theme, 'important');
-        docStyle.setProperty('--ym-logo-color-primary-variant', theme, 'important');
-        docStyle.setProperty('--ym-logo-color-primary-player', theme, 'important');
-        docStyle.setProperty('--text-color-accent', theme, 'important');
-        docStyle.setProperty('--sys-glass-blur', `${settings.glassBlur || 20}px`, 'important');
-        docStyle.setProperty('--sys-glass-opacity', ((settings.glassOpacity || 75) / 100).toFixed(2), 'important');
-        applyVibeCloud();
+      if (typeof document === 'undefined' || !document.documentElement) return;
+      const theme = settings.themeColor || '#ebbf89';
 
-        const hub = document.getElementById('ym-audio-hub-modal');
-        if (hub) {
-          hub.querySelectorAll('.ym-color-circle').forEach(b => {
-            b.classList.toggle('active', (b.getAttribute('data-hex') || '').toLowerCase() === theme.toLowerCase());
-          });
-          const svgPath = hub.querySelector('.ym-eq-stroke');
-          if (svgPath) svgPath.setAttribute('stroke', theme);
-          const stop0 = hub.querySelector('#ym-eq-grad-fill stop[offset="0%"]');
-          if (stop0) stop0.setAttribute('stop-color', theme);
-        }
+      let dynamicStyle = document.getElementById('ym-dynamic-theme');
+      if (!dynamicStyle) {
+        dynamicStyle = document.createElement('style');
+        dynamicStyle.id = 'ym-dynamic-theme';
+        (document.head || document.documentElement).appendChild(dynamicStyle);
       }
+      dynamicStyle.textContent = `
+        :root, html, body {
+          --sys-primary: ${theme} !important;
+          --sys-primary-hover: ${theme} !important;
+          --ym-controls-color-primary-default-enabled: ${theme} !important;
+          --ym-controls-color-primary-default-hovered: ${theme} !important;
+          --ym-controls-color-primary-outline-selected_stroke: ${theme} !important;
+          --ym-slider-color-primary-enabled: ${theme} !important;
+          --ym-slider-color-primary-progress: ${theme} !important;
+          --ym-logo-color-primary-variant: ${theme} !important;
+          --ym-logo-color-primary-player: ${theme} !important;
+          --text-color-accent: ${theme} !important;
+          --sys-glass-blur: ${settings.glassBlur || 24}px !important;
+          --sys-glass-opacity: ${((settings.glassOpacity || 88) / 100).toFixed(2)} !important;
+        }
+      `;
+
+      const docStyle = document.documentElement.style;
+      docStyle.setProperty('--sys-primary', theme, 'important');
+      docStyle.setProperty('--sys-primary-hover', theme, 'important');
+      docStyle.setProperty('--text-color-accent', theme, 'important');
+      applyVibeCloud();
+
+      const hub = document.getElementById('ym-audio-hub-root');
+      if (hub) {
+        hub.querySelectorAll('.ym-color-circle').forEach(b => {
+          b.classList.toggle('active', (b.getAttribute('data-hex') || '').toLowerCase() === theme.toLowerCase());
+        });
+        const svgPath = hub.querySelector('.ym-eq-stroke');
+        if (svgPath) svgPath.setAttribute('stroke', theme);
+        const stop0 = hub.querySelector('#ym-eq-grad stop[offset="0%"]');
+        if (stop0) stop0.setAttribute('stop-color', theme);
+      }
+
+      // Persist to theme.json via IPC if available
+      try {
+        if (typeof window !== 'undefined' && window.electron && window.electron.ipcRenderer) {
+          window.electron.ipcRenderer.send('save-theme-color', theme);
+        }
+      } catch (e) {}
     };
     applyTheme();
 
@@ -159,10 +193,12 @@
     const NUM_BARS = 64;
     let cavaValues = new Float32Array(NUM_BARS);
     let visualBars = new Float32Array(NUM_BARS);
+    let lastCavaMsgTime = 0;
     // Listen for CAVA stream via postMessage from IPC bridge
     if (typeof window !== 'undefined') {
       window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'ym-cava-data' && Array.isArray(event.data.data)) {
+          lastCavaMsgTime = performance.now();
           const parts = event.data.data;
           const sens = (settings.cavaSensitivity || 100) / 100;
           for (let i = 0; i < NUM_BARS; i++) {
@@ -270,22 +306,24 @@
       };
 
       const renderCava = (timestamp) => {
+        animId = requestAnimationFrame(renderCava);
+
         if (settings.cavaMode === 'hidden') {
-          if (cavaContainer && cavaContainer.style.display !== 'none') cavaContainer.style.display = 'none';
-          animId = setTimeout(() => requestAnimationFrame(renderCava), 400);
+          if (cavaContainer && cavaContainer.style.display !== 'none') {
+            cavaContainer.style.display = 'none';
+          }
           return;
         }
 
         const vibeRoot = document.querySelector('[class*="VibePage_root"]');
-        const isOnVibe = !!vibeRoot && vibeRoot.offsetParent !== null;
+        const isOnVibe = !!vibeRoot && !document.querySelector('[class*="FullscreenPlayerDesktop_root"]');
 
         if (document.hidden || !isOnVibe) {
-          if (cavaContainer && cavaContainer.style.display !== 'none') cavaContainer.style.display = 'none';
-          animId = setTimeout(() => requestAnimationFrame(renderCava), 250);
+          if (cavaContainer && cavaContainer.style.display !== 'none') {
+            cavaContainer.style.display = 'none';
+          }
           return;
         }
-
-        animId = requestAnimationFrame(renderCava);
 
         if (cavaContainer.style.display !== 'block') {
           cavaContainer.style.display = 'block';
@@ -294,12 +332,23 @@
 
         if (!cachedWidth || !cachedHeight) {
           resizeCanvas();
-          if (!cachedWidth || !cachedHeight) return;
+          if (!cachedWidth || !cachedHeight) {
+            cachedWidth = cavaContainer.clientWidth || window.innerWidth;
+            cachedHeight = cavaContainer.clientHeight || 90;
+          }
         }
 
         // Cap frame rate to ~60 FPS
         if (timestamp - lastFrameTime < 16) return;
         lastFrameTime = timestamp;
+
+        // Smoothly decay real cava data if no updates arrived in last 120ms (e.g. wave transition)
+        if (performance.now() - lastCavaMsgTime > 120) {
+          for (let i = 0; i < NUM_BARS; i++) {
+            cavaValues[i] *= 0.82;
+            if (cavaValues[i] < 0.5) cavaValues[i] = 0;
+          }
+        }
 
         ctx.clearRect(0, 0, cachedWidth, cachedHeight);
 
@@ -311,8 +360,9 @@
         }
 
         const barCount = Math.max(16, Math.min(64, settings.cavaBars || 36));
-        const audioEl = document.querySelector('audio');
-        const curTime = audioEl ? audioEl.currentTime : 0;
+        const curTime = (capturedAudio && !isNaN(capturedAudio.currentTime) && capturedAudio.currentTime > 0)
+          ? capturedAudio.currentTime
+          : (performance.now() / 1000);
         const beatPhase = (curTime * 9.2) + phase;
         const sens = (settings.cavaSensitivity || 100) / 100;
 
@@ -609,33 +659,42 @@
       };
 
       const applyDspSettings = () => {
-        if (!dspContext) return;
-        const now = dspContext.currentTime;
+        const now = dspContext ? dspContext.currentTime : 0;
 
         // Preamp gain
+        const preampDb = typeof settings.preamp === 'number' ? settings.preamp : 0;
+        const preampGain = Math.pow(10, preampDb / 20);
         if (dspPreampNode && dspPreampNode.gain) {
-          const db = typeof settings.preamp === 'number' ? settings.preamp : 0;
-          const gainVal = Math.pow(10, db / 20);
-          dspPreampNode.gain.setTargetAtTime(gainVal, now, 0.05);
+          dspPreampNode.gain.setTargetAtTime(preampGain, now, 0.05);
         }
 
         // 7-Band Equalizer + Headphone profile offsets
         let profileOffsets = [0, 0, 0, 0, 0, 0, 0];
         if (settings.headphoneProfile === 'tws') {
-          profileOffsets = [2, 1, 0, 0, 1, 2, 1];
+          profileOffsets = [3, 2, 0, 0, 1, 3, 2];
         } else if (settings.headphoneProfile === 'overear') {
-          profileOffsets = [1, 0, 0, 1, 1, 2, 3];
+          profileOffsets = [1, 0, 0, 1, 2, 3, 4];
         } else if (settings.headphoneProfile === 'studio') {
           profileOffsets = [0, 0, 0, 0, 0, 0, 0];
         } else if (settings.headphoneProfile === 'acoustic') {
-          profileOffsets = [1, 2, 2, 1, 0, -1, -1];
+          profileOffsets = [2, 3, 2, 1, 0, -1, -2];
         }
 
-        if (Array.isArray(settings.eqBands) && dspBandNodes.length === 7) {
-          settings.eqBands.forEach((db, i) => {
-            if (dspBandNodes[i] && dspBandNodes[i].gain) {
-              const totalGain = Math.max(-15, Math.min(15, db + profileOffsets[i]));
-              dspBandNodes[i].gain.setTargetAtTime(totalGain, now, 0.05);
+        const totalBands = eqFrequencies.map((f, i) => {
+          let totalDb = ((settings.eqBands && settings.eqBands[i]) || 0) + profileOffsets[i];
+          if (settings.bassBoost && (i === 0 || i === 1)) {
+            totalDb += (i === 0 ? settings.bassAmount : settings.bassAmount * 0.7);
+          }
+          if (settings.vocalClarity && (i === 4 || i === 3)) {
+            totalDb += (i === 4 ? (settings.vocalAmount / 10) : (settings.vocalAmount / 18));
+          }
+          return Math.max(-18, Math.min(18, totalDb));
+        });
+
+        if (Array.isArray(dspBandNodes) && dspBandNodes.length === 7) {
+          dspBandNodes.forEach((node, i) => {
+            if (node && node.gain) {
+              node.gain.setTargetAtTime(totalBands[i], now, 0.05);
             }
           });
         }
@@ -657,7 +716,63 @@
           const pan = Math.max(-1, Math.min(1, (settings.balance || 0) / 100));
           dspPannerNode.pan.setTargetAtTime(pan, now, 0.05);
         }
+
+        // Apply to Yandex Music's internal audio graph instances
+        const graphs = window.__ymAudioGraphs || (window.__ymActiveGraph ? [window.__ymActiveGraph] : []);
+        graphs.forEach(graph => {
+          if (!graph || !graph.context) return;
+          try {
+            if (graph.context.state === 'suspended') {
+              graph.context.resume().catch(() => {});
+            }
+
+            const bandObjects = eqFrequencies.map((f, i) => ({ key: f, value: totalBands[i] }));
+            if (typeof graph.setBands === 'function') {
+              graph.setBands(bandObjects);
+            }
+            if (typeof graph.connectEqualizer === 'function') {
+              graph.connectEqualizer();
+            }
+            if (Array.isArray(graph.bands)) {
+              graph.bands.forEach((b, i) => {
+                if (b && b.gain) {
+                  b.gain.setValueAtTime(totalBands[i], graph.context.currentTime);
+                }
+              });
+            }
+            if (graph.preamp && graph.preamp.gain) {
+              graph.preamp.gain.setValueAtTime(preampGain, graph.context.currentTime);
+            }
+            if (typeof graph.setPreamp === 'function') {
+              graph.setPreamp(preampGain);
+            }
+          } catch (e) {
+            console.warn('[Enhancer] applyDspSettings error:', e);
+          }
+        });
       };
+
+      const hookGraph = (graph) => {
+        if (!graph || !graph.context) return;
+        try {
+          if (graph.context.state === 'suspended') {
+            graph.context.resume().catch(() => {});
+          }
+          applyDspSettings();
+        } catch (e) {
+          console.warn('[Enhancer] Failed to hook audio graph:', e);
+        }
+      };
+
+      window.__ymHookGraph = hookGraph;
+      if (Array.isArray(window.__ymAudioGraphs)) {
+        window.__ymAudioGraphs.forEach(hookGraph);
+      }
+      if (window.__ymActiveGraph) {
+        hookGraph(window.__ymActiveGraph);
+      }
+      window.__ymApplyDsp = applyDspSettings;
+      applyDspSettings();
 
       // Monkey-patch AudioContext.prototype.createMediaElementSource to hook into Yandex Music playback
       if (typeof AudioContext !== 'undefined' && !AudioContext.prototype.__ymPatched) {
@@ -1171,10 +1286,15 @@
         container.querySelectorAll('[data-cava]').forEach(btn => {
           btn.addEventListener('click', () => {
             settings.cavaMode = btn.getAttribute('data-cava');
-            if (cavaContainer) cavaContainer.className = `ym-cava-${settings.cavaMode}`;
+            if (cavaContainer) {
+              cavaContainer.className = `ym-cava-${settings.cavaMode}`;
+              cavaContainer.style.display = (settings.cavaMode === 'hidden') ? 'none' : 'block';
+            }
             saveSettings();
             container.querySelectorAll('[data-cava]').forEach(b => b.classList.toggle('active', b === btn));
-            resizeCanvas();
+            if (settings.cavaMode !== 'hidden') {
+              resizeCanvas();
+            }
           });
         });
 
@@ -1476,15 +1596,33 @@
 
         if (!isSyncedLyrics || lyricsLines.length === 0) return;
 
-        const overlay = document.querySelector('[class*="VibePlayerbarMeta_timecodeOverlay"]') ||
-                        document.querySelector('[class*="VibePlayerbarTimecodeWithOverlay_timecode"]') ||
-                        document.querySelector('[class*="ChangeTimecode_timecode"]') ||
-                        document.querySelector('[class*="Timecode_"]') ||
-                        document.querySelector('[data-test-id*="timecode"]');
-        if (!overlay || !overlay.textContent) return;
-        const m = overlay.textContent.match(/(\d{1,2}):(\d{2})/);
-        if (!m) return;
-        const curSec = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+        let curSec = 0;
+        if (capturedAudio && !isNaN(capturedAudio.currentTime) && capturedAudio.currentTime > 0) {
+          curSec = capturedAudio.currentTime;
+        } else {
+          const domAudio = document.querySelector('audio');
+          if (domAudio && !isNaN(domAudio.currentTime) && domAudio.currentTime > 0) {
+            curSec = domAudio.currentTime;
+          } else {
+            const slider = document.querySelector('[class*="PlayerBar"] [role="slider"], [class*="ProgressBar"] [role="slider"], [role="progressbar"], [class*="slider"]');
+            if (slider) {
+              const val = parseFloat(slider.getAttribute('aria-valuenow'));
+              if (!isNaN(val) && val >= 0) curSec = val;
+            }
+          }
+        }
+        if (!curSec) {
+          const overlay = document.querySelector('[class*="VibePlayerbarMeta_timecodeOverlay"]') ||
+                          document.querySelector('[class*="VibePlayerbarTimecodeWithOverlay_timecode"]') ||
+                          document.querySelector('[class*="ChangeTimecode_timecode"]') ||
+                          document.querySelector('[class*="Timecode_"]') ||
+                          document.querySelector('[class*="timecode"]') ||
+                          document.querySelector('[data-test-id*="timecode"]');
+          if (overlay && overlay.textContent) {
+            const m = overlay.textContent.match(/(\d{1,2}):(\d{2})/);
+            if (m) curSec = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+          }
+        }
 
         let newIdx = -1;
         for (let i = 0; i < lyricsLines.length; i++) {
@@ -1510,7 +1648,7 @@
             });
           }
         }
-      }, 300);
+      }, 180);
 
       // Add Lyrics button on Player Bar (слегка левее с запасом до кнопки «...»)
       const mountPlayerLyricsBtn = () => {

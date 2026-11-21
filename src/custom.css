@@ -1729,13 +1729,15 @@ body:has([class*="VibePage_root"]) [class*="DefaultLayout_root"] {
 [class*="VibePage_root"]::before {
   content: "" !important;
   position: absolute !important;
-  top: 40% !important;
+  top: 42% !important;
   left: 50% !important;
-  width: 80vmax !important;
-  height: 80vmax !important;
+  width: 78vmax !important;
+  height: 78vmax !important;
   transform: translate(-50%, -50%) translateZ(0) !important;
   border-radius: 50% !important;
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--sys-primary, #ebbf89) 24%, transparent) 0%, color-mix(in srgb, var(--sys-primary, #ebbf89) 10%, transparent) 35%, color-mix(in srgb, var(--sys-primary, #ebbf89) 2%, transparent) 55%, transparent 70%) !important;
+  background: radial-gradient(circle at center, var(--sys-primary, #ebbf89) 0%, rgba(235, 191, 137, 0.40) 28%, rgba(200, 110, 60, 0.16) 52%, transparent 72%) !important;
+  filter: blur(52px) !important;
+  opacity: calc(var(--sys-vibe-opacity, 0.95) * 0.95) !important;
   pointer-events: none !important;
   z-index: 0 !important;
   contain: strict !important;
@@ -1748,13 +1750,15 @@ body:has([class*="VibePage_root"]) [class*="DefaultLayout_root"] {
 [class*="VibePage_root"]::after {
   content: "" !important;
   position: absolute !important;
-  top: 42% !important;
+  top: 44% !important;
   left: 50% !important;
   width: 58vmax !important;
   height: 58vmax !important;
   transform: translate(-50%, -50%) translateZ(0) !important;
   border-radius: 50% !important;
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--sys-primary, #ebbf89) 16%, transparent) 0%, color-mix(in srgb, var(--sys-primary, #ebbf89) 6%, transparent) 40%, transparent 65%) !important;
+  background: radial-gradient(circle at center, #ff8a4c 0%, rgba(235, 140, 60, 0.35) 32%, rgba(130, 45, 170, 0.14) 58%, transparent 75%) !important;
+  filter: blur(42px) !important;
+  opacity: calc(var(--sys-vibe-opacity, 0.95) * 0.85) !important;
   pointer-events: none !important;
   z-index: 0 !important;
   contain: strict !important;
@@ -1762,12 +1766,25 @@ body:has([class*="VibePage_root"]) [class*="DefaultLayout_root"] {
   will-change: transform, opacity !important;
 }
 
-/* Vibe canvas containers - smooth floating motion */
+/* Hide original Beta slot and clutter */
+[class*="MainPage_betaSlot"],
+[class*="MainPage_beta"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Native Vibe cloud canvas container - centered strictly behind track */
 [class*="VibeAnimation_root"],
 [class*="VibeWidgetAnimation_root"] {
-  position: relative !important;
-  z-index: 1 !important;
-  transform: translateZ(0) !important;
+  position: absolute !important;
+  top: 44% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
   animation: ym-vibe-cloud-float 9s ease-in-out infinite !important;
   will-change: transform !important;
 }
@@ -1777,9 +1794,10 @@ body:has([class*="VibePage_root"]) [class*="DefaultLayout_root"] {
 [class*="VibeAnimation_root"] canvas,
 [class*="VibeWidgetAnimation_canvas"] {
   filter: var(--sys-vibe-filter, hue-rotate(0deg) saturate(1.35)) !important;
-  opacity: var(--sys-vibe-opacity, 0.95) !important;
+  opacity: var(--sys-vibe-opacity, 0.98) !important;
   transform: translateZ(0) !important;
   will-change: transform, filter, opacity !important;
+  pointer-events: none !important;
   contain: paint !important;
   transition: filter 0.5s ease, opacity 0.5s ease !important;
 }

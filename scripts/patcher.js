@@ -379,6 +379,25 @@ try {
       event.returnValue = '';
     }
   });
+  electronMod.ipcMain.on('save-theme-color', (event, hex) => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const configDir = process.platform === 'win32'
+      ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'YandexMusic')
+      : (process.platform === 'darwin'
+          ? path.join(os.homedir(), 'Library', 'Application Support', 'YandexMusic')
+          : path.join(os.homedir(), '.config', 'YandexMusic'));
+    const themeJsonPath = path.join(configDir, 'theme.json');
+    try {
+      let data = {};
+      if (fs.existsSync(themeJsonPath)) {
+        try { data = JSON.parse(fs.readFileSync(themeJsonPath, 'utf8')); } catch (e) {}
+      }
+      data.primary = hex;
+      fs.writeFileSync(themeJsonPath, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {}
+  });
 } catch (e) {}
 ${INJECTION_TAG_END}
 `;
@@ -645,6 +664,37 @@ function patchFiles(unpackedDir) {
   const hubSrc = path.join(__dirname, '..', 'src', 'audio_hub.js');
   if (fs.existsSync(hubSrc)) {
     fs.copyFileSync(hubSrc, path.join(unpackedDir, 'audio_hub.js'));
+  }
+
+  // Hook Next.js internal audio graph to enable real native WebAudio DSP
+  try {
+    const chunksDir = path.join(unpackedDir, 'app', '_next', 'static', 'chunks');
+    if (fs.existsSync(chunksDir)) {
+      const findFiles = (dir) => {
+        let results = [];
+        for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, item.name);
+          if (item.isDirectory()) results = results.concat(findFiles(full));
+          else if (item.name.endsWith('.js')) results.push(full);
+        }
+        return results;
+      };
+
+      for (const file of findFiles(chunksDir)) {
+        let content = fs.readFileSync(file, 'utf8');
+        if (content.includes('this.sourceNode=this.context.createMediaElementSource')) {
+          log(`Hooking WebAudio pipeline in chunk: ${path.basename(file)}...`);
+          content = content.replace(
+            'this.config=t,this.connectNodes()',
+            'this.config=t,this.connectNodes(),(window.__ymAudioGraphs=window.__ymAudioGraphs||[]).push(this),window.__ymActiveGraph=this,window.__ymHookGraph&&window.__ymHookGraph(this)'
+          );
+          fs.writeFileSync(file, content, 'utf8');
+          break;
+        }
+      }
+    }
+  } catch (err) {
+    warn(`Could not hook Next.js chunk: ${err.message}`);
   }
 }
 
