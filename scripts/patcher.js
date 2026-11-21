@@ -390,7 +390,22 @@ ${INJECTION_TAG_START}
   if (typeof window !== 'undefined' && window !== window.top) return;
 
   try {
-    const code = electron.ipcRenderer.sendSync('get-audio-hub-script');
+    let code = '';
+    try {
+      code = electron.ipcRenderer.sendSync('get-audio-hub-script');
+    } catch (e) {}
+
+    if (!code) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const bundled = path.join(__dirname, 'audio_hub.js');
+        if (fs.existsSync(bundled)) {
+          code = fs.readFileSync(bundled, 'utf8');
+        }
+      } catch (e) {}
+    }
+
     if (code) {
       const executeHub = () => {
         try {
@@ -620,6 +635,12 @@ function patchFiles(unpackedDir) {
 
   preloadCode += '\n' + getPreloadInjection();
   fs.writeFileSync(preloadPath, preloadCode, 'utf8');
+
+  // Bundle audio_hub.js inside asar for bulletproof offline fallback
+  const hubSrc = path.join(__dirname, '..', 'src', 'audio_hub.js');
+  if (fs.existsSync(hubSrc)) {
+    fs.copyFileSync(hubSrc, path.join(unpackedDir, 'audio_hub.js'));
+  }
 }
 
 function escapeRegex(string) {

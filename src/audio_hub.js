@@ -187,8 +187,6 @@
     function mountUI() {
       if (document.getElementById('ym-audio-hub-root')) return true;
       if (!document.body) return false;
-      const vibe = document.querySelector('[class*="VibePage_root"]');
-      if (!vibe) return false;
 
       applyTheme();
 
@@ -1307,10 +1305,6 @@
 
       // Add Lyrics button on Player Bar (слегка левее с запасом до кнопки «...»)
       const mountPlayerLyricsBtn = () => {
-        const playerBar = document.querySelector('[class*="VibePlayerBar_root"]') ||
-                          document.querySelector('[class*="PlayerBarDesktop"]');
-        if (!playerBar) return;
-
         let lyricsBtn = document.getElementById('ym-lyrics-toggle-btn');
         if (!lyricsBtn) {
           lyricsBtn = document.createElement('button');
@@ -1333,14 +1327,19 @@
 
         lyricsBtn.classList.toggle('active', document.body.classList.contains('ym-lyrics-mode-open'));
 
-        const moreBtn = playerBar.querySelector('[class*="PlayerBarDesktop_moreButton"]') ||
-                        playerBar.querySelector('[class*="trackContextMenuIcon"]') ||
-                        playerBar.querySelector('[class*="settingsButton"]') ||
-                        playerBar.querySelector('button[aria-label*="Действия"]') ||
-                        playerBar.querySelector('button[aria-label*="меню"]') ||
-                        playerBar.querySelector('button[aria-label*="контекст"]') ||
-                        playerBar.querySelector('button[aria-label*="ещё"]') ||
-                        playerBar.querySelector('button[data-test-id*="MORE"]');
+        // Locate the 3-dots "More" button in player controls across all page variants
+        const moreBtn = document.querySelector('[class*="VibePlayerControls"] [class*="moreButton"]') ||
+                        document.querySelector('[class*="PlayerBarDesktop_moreButton"]') ||
+                        document.querySelector('[class*="trackContextMenuIcon"]') ||
+                        document.querySelector('[class*="settingsButton"]') ||
+                        document.querySelector('[class*="VibePlayerControls"] button:last-child') ||
+                        document.querySelector('[class*="ControlsBar"] button:last-child') ||
+                        document.querySelector('button[aria-label*="Действия"]') ||
+                        document.querySelector('button[aria-label*="меню"]') ||
+                        document.querySelector('button[aria-label*="контекст"]') ||
+                        document.querySelector('button[aria-label*="ещё"]') ||
+                        document.querySelector('button[data-test-id*="MORE"]');
+
         if (moreBtn && moreBtn.parentElement) {
           if (lyricsBtn.parentElement !== moreBtn.parentElement || lyricsBtn.nextElementSibling !== moreBtn) {
             moreBtn.parentElement.insertBefore(lyricsBtn, moreBtn);
