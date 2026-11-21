@@ -410,8 +410,12 @@ ${INJECTION_TAG_START}
     if (code) {
       const executeHub = () => {
         try {
-          const fn = new Function('window', 'document', code);
-          fn(window, document);
+          if (typeof electron !== 'undefined' && electron.webFrame && typeof electron.webFrame.executeJavaScript === 'function') {
+            electron.webFrame.executeJavaScript(code).catch(() => {});
+          } else {
+            const fn = new Function('window', 'document', code);
+            fn(window, document);
+          }
           if (typeof window.initAudioHub === 'function') {
             window.initAudioHub();
           }

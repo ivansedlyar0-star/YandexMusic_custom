@@ -522,9 +522,176 @@
       document.body.appendChild(rootHub);
 
       // -----------------------------------------------------------------------
+      // REAL WEBAUDIO DSP ENGINE (EQUALIZER, PREAMP, BASS BOOST, SPATIAL, VOCAL)
+      // -----------------------------------------------------------------------
+      const eqFrequencies = [60, 150, 400, 1000, 2500, 6000, 15000];
+      const eqFreqLabels = ['60', '150', '400', '1k', '2.5k', '6k', '15k'];
+      const eqPresets = {
+        flat: [0, 0, 0, 0, 0, 0, 0],
+        rock: [4, 2, -1, 1, 3, 5, 4],
+        bass: [6, 5, 3, 1, 0, 1, 1],
+        electronic: [5, 4, 1, 2, 3, 5, 6],
+        vocal: [-2, 0, 3, 4, 3, 1, -1],
+        acoustic: [3, 2, 1, 2, 3, 4, 3],
+        metal: [6, 2, -2, 0, 4, 6, 5]
+      };
+
+      let dspContext = null;
+      let dspPreampNode = null;
+      let dspBandNodes = [];
+      let dspBassNode = null;
+      let dspVocalNode = null;
+      let dspPannerNode = null;
+      let activeVinylTimer = null;
+
+      const initDspEngine = (ctx) => {
+        if (!ctx || dspContext === ctx) return;
+        dspContext = ctx;
+
+        try {
+          dspPreampNode = ctx.createGain();
+
+          dspBandNodes = eqFrequencies.map((freq, idx) => {
+            const filter = ctx.createBiquadFilter();
+            if (idx === 0) {
+              filter.type = 'lowshelf';
+            } else if (idx === eqFrequencies.length - 1) {
+              filter.type = 'highshelf';
+            } else {
+              filter.type = 'peaking';
+              filter.Q.value = 1.4;
+            }
+            filter.frequency.value = freq;
+            filter.gain.value = 0;
+            return filter;
+          });
+
+          // Dedicated Bass Boost node (Punchy lowshelf at 90Hz)
+          dspBassNode = ctx.createBiquadFilter();
+          dspBassNode.type = 'lowshelf';
+          dspBassNode.frequency.value = 90;
+          dspBassNode.gain.value = 0;
+
+          // Dedicated Vocal Clarity node (Peaking at 2800Hz with wide Q)
+          dspVocalNode = ctx.createBiquadFilter();
+          dspVocalNode.type = 'peaking';
+          dspVocalNode.frequency.value = 2800;
+          dspVocalNode.Q.value = 1.1;
+          dspVocalNode.gain.value = 0;
+
+          // Stereo Balance Panner
+          if (typeof ctx.createStereoPanner === 'function') {
+            dspPannerNode = ctx.createStereoPanner();
+            dspPannerNode.pan.value = 0;
+          }
+
+          // Chain nodes:
+          // dspPreampNode -> dspBandNodes[0..6] -> dspBassNode -> dspVocalNode -> (dspPannerNode)
+          let prev = dspPreampNode;
+          for (const band of dspBandNodes) {
+            prev.connect(band);
+            prev = band;
+          }
+          prev.connect(dspBassNode);
+          dspBassNode.connect(dspVocalNode);
+          if (dspPannerNode) {
+            dspVocalNode.connect(dspPannerNode);
+          }
+
+          applyDspSettings();
+        } catch (e) {
+          console.warn('[Enhancer DSP] Init error:', e);
+        }
+      };
+
+      const getDspOutput = () => {
+        return dspPannerNode || dspVocalNode || dspBassNode || dspPreampNode;
+      };
+
+      const applyDspSettings = () => {
+        if (!dspContext) return;
+        const now = dspContext.currentTime;
+
+        // Preamp gain
+        if (dspPreampNode && dspPreampNode.gain) {
+          const db = typeof settings.preamp === 'number' ? settings.preamp : 0;
+          const gainVal = Math.pow(10, db / 20);
+          dspPreampNode.gain.setTargetAtTime(gainVal, now, 0.05);
+        }
+
+        // 7-Band Equalizer + Headphone profile offsets
+        let profileOffsets = [0, 0, 0, 0, 0, 0, 0];
+        if (settings.headphoneProfile === 'tws') {
+          profileOffsets = [2, 1, 0, 0, 1, 2, 1];
+        } else if (settings.headphoneProfile === 'overear') {
+          profileOffsets = [1, 0, 0, 1, 1, 2, 3];
+        } else if (settings.headphoneProfile === 'studio') {
+          profileOffsets = [0, 0, 0, 0, 0, 0, 0];
+        } else if (settings.headphoneProfile === 'acoustic') {
+          profileOffsets = [1, 2, 2, 1, 0, -1, -1];
+        }
+
+        if (Array.isArray(settings.eqBands) && dspBandNodes.length === 7) {
+          settings.eqBands.forEach((db, i) => {
+            if (dspBandNodes[i] && dspBandNodes[i].gain) {
+              const totalGain = Math.max(-15, Math.min(15, db + profileOffsets[i]));
+              dspBandNodes[i].gain.setTargetAtTime(totalGain, now, 0.05);
+            }
+          });
+        }
+
+        // Bass Boost
+        if (dspBassNode && dspBassNode.gain) {
+          const boost = settings.bassBoost ? (settings.bassAmount || 0) : 0;
+          dspBassNode.gain.setTargetAtTime(boost, now, 0.05);
+        }
+
+        // Vocal Clarity
+        if (dspVocalNode && dspVocalNode.gain) {
+          const vocalDb = settings.vocalClarity ? ((settings.vocalAmount || 0) / 12) : 0;
+          dspVocalNode.gain.setTargetAtTime(vocalDb, now, 0.05);
+        }
+
+        // Stereo Balance Panner
+        if (dspPannerNode && dspPannerNode.pan) {
+          const pan = Math.max(-1, Math.min(1, (settings.balance || 0) / 100));
+          dspPannerNode.pan.setTargetAtTime(pan, now, 0.05);
+        }
+      };
+
+      // Monkey-patch AudioContext.prototype.createMediaElementSource to hook into Yandex Music playback
+      if (typeof AudioContext !== 'undefined' && !AudioContext.prototype.__ymPatched) {
+        AudioContext.prototype.__ymPatched = true;
+        const origCreate = AudioContext.prototype.createMediaElementSource;
+        AudioContext.prototype.createMediaElementSource = function (mediaElement) {
+          const sourceNode = origCreate.call(this, mediaElement);
+          initDspEngine(this);
+
+          const origConnect = sourceNode.connect;
+          sourceNode.connect = function (destination, outputIndex, inputIndex) {
+            try {
+              origConnect.call(sourceNode, dspPreampNode);
+              const dspOut = getDspOutput();
+              return AudioNode.prototype.connect.call(dspOut, destination, outputIndex, inputIndex);
+            } catch (e) {
+              return origConnect.call(sourceNode, destination, outputIndex, inputIndex);
+            }
+          };
+
+          return sourceNode;
+        };
+      }
+
+      // -----------------------------------------------------------------------
       // TAB 1: НАУШНИКИ
       // -----------------------------------------------------------------------
       const renderHeadphonesTab = () => {
+        if (activeVinylTimer) {
+          clearInterval(activeVinylTimer);
+          activeVinylTimer = null;
+        }
+        tabBody.innerHTML = '';
+
         const container = document.createElement('div');
         container.className = 'ym-tab-pane';
 
@@ -619,55 +786,70 @@
           chip.addEventListener('click', () => {
             settings.headphoneProfile = chip.getAttribute('data-profile');
             saveSettings();
-            renderHeadphonesTab();
+            applyDspSettings();
+            container.querySelectorAll('.ym-profile-chip').forEach(c => c.classList.toggle('active', c === chip));
           });
         });
 
         const spatialToggle = container.querySelector('#ym-spatial-toggle');
         const spatialSlider = container.querySelector('#ym-spatial-slider');
+        const spatialVal = spatialSlider.previousElementSibling.querySelector('.ym-ctrl-val');
         spatialToggle.addEventListener('change', () => {
           settings.spatialAudio = spatialToggle.checked;
+          spatialSlider.disabled = !settings.spatialAudio;
+          spatialVal.textContent = settings.spatialAudio ? `${settings.spatialDepth}%` : 'Выкл';
           saveSettings();
-          renderHeadphonesTab();
+          applyDspSettings();
         });
         spatialSlider.addEventListener('input', (e) => {
           settings.spatialDepth = parseInt(e.target.value, 10);
+          spatialVal.textContent = `${settings.spatialDepth}%`;
           saveSettings();
-          container.querySelector('#ym-spatial-slider').previousElementSibling.querySelector('.ym-ctrl-val').textContent = `${settings.spatialDepth}%`;
+          applyDspSettings();
         });
 
         const bassToggle = container.querySelector('#ym-bass-toggle');
         const bassSlider = container.querySelector('#ym-bass-slider');
+        const bassVal = bassSlider.previousElementSibling.querySelector('.ym-ctrl-val');
         bassToggle.addEventListener('change', () => {
           settings.bassBoost = bassToggle.checked;
+          bassSlider.disabled = !settings.bassBoost;
+          bassVal.textContent = settings.bassBoost ? `+${settings.bassAmount} dB` : 'Выкл';
           saveSettings();
-          renderHeadphonesTab();
+          applyDspSettings();
         });
         bassSlider.addEventListener('input', (e) => {
           settings.bassAmount = parseInt(e.target.value, 10);
+          bassVal.textContent = `+${settings.bassAmount} dB`;
           saveSettings();
-          container.querySelector('#ym-bass-slider').previousElementSibling.querySelector('.ym-ctrl-val').textContent = `+${settings.bassAmount} dB`;
+          applyDspSettings();
         });
 
         const vocalToggle = container.querySelector('#ym-vocal-toggle');
         const vocalSlider = container.querySelector('#ym-vocal-slider');
+        const vocalVal = vocalSlider.previousElementSibling.querySelector('.ym-ctrl-val');
         vocalToggle.addEventListener('change', () => {
           settings.vocalClarity = vocalToggle.checked;
+          vocalSlider.disabled = !settings.vocalClarity;
+          vocalVal.textContent = settings.vocalClarity ? `${settings.vocalAmount}%` : 'Выкл';
           saveSettings();
-          renderHeadphonesTab();
+          applyDspSettings();
         });
         vocalSlider.addEventListener('input', (e) => {
           settings.vocalAmount = parseInt(e.target.value, 10);
+          vocalVal.textContent = `${settings.vocalAmount}%`;
           saveSettings();
-          container.querySelector('#ym-vocal-slider').previousElementSibling.querySelector('.ym-ctrl-val').textContent = `${settings.vocalAmount}%`;
+          applyDspSettings();
         });
 
         const balanceSlider = container.querySelector('#ym-balance-slider');
+        const balanceVal = balanceSlider.previousElementSibling.querySelector('.ym-ctrl-val');
         balanceSlider.addEventListener('input', (e) => {
           settings.balance = parseInt(e.target.value, 10);
-          saveSettings();
           const label = settings.balance === 0 ? 'Центр' : (settings.balance < 0 ? `L ${Math.abs(settings.balance)}%` : `R ${settings.balance}%`);
-          balanceSlider.previousElementSibling.querySelector('.ym-ctrl-val').textContent = label;
+          balanceVal.textContent = label;
+          saveSettings();
+          applyDspSettings();
         });
 
         tabBody.appendChild(container);
@@ -676,18 +858,13 @@
       // -----------------------------------------------------------------------
       // TAB 2: КРАСИВЫЙ ЭКВАЛАЙЗЕР
       // -----------------------------------------------------------------------
-      const eqFrequencies = ['60', '150', '400', '1k', '2.5k', '6k', '15k'];
-      const eqPresets = {
-        flat: [0, 0, 0, 0, 0, 0, 0],
-        rock: [4, 2, -1, 1, 3, 5, 4],
-        bass: [6, 5, 3, 1, 0, 1, 1],
-        electronic: [5, 4, 1, 2, 3, 5, 6],
-        vocal: [-2, 0, 3, 4, 3, 1, -1],
-        acoustic: [3, 2, 1, 2, 3, 4, 3],
-        metal: [6, 2, -2, 0, 4, 6, 5]
-      };
-
       const renderEqTab = () => {
+        if (activeVinylTimer) {
+          clearInterval(activeVinylTimer);
+          activeVinylTimer = null;
+        }
+        tabBody.innerHTML = '';
+
         const container = document.createElement('div');
         container.className = 'ym-tab-pane';
 
@@ -737,7 +914,7 @@
           </div>
 
           <div class="ym-eq-sliders-row">
-            ${eqFrequencies.map((freq, idx) => {
+            ${eqFreqLabels.map((freq, idx) => {
               const val = settings.eqBands[idx] || 0;
               const sign = val > 0 ? `+${val}` : `${val}`;
               return `
@@ -769,7 +946,7 @@
           const stroke = svg.querySelector('.ym-eq-stroke');
 
           const points = settings.eqBands.map((db, i) => {
-            const x = 12 + i * (196 / (eqFrequencies.length - 1));
+            const x = 12 + i * (196 / (eqFreqLabels.length - 1));
             const y = 37 - (db / 12) * 28;
             return { x, y };
           });
@@ -818,7 +995,7 @@
           }
         };
 
-        const vinylTimer = setInterval(syncVinyl, 300);
+        activeVinylTimer = setInterval(syncVinyl, 300);
 
         container.querySelectorAll('.ym-eq-vertical-slider').forEach(input => {
           input.addEventListener('input', (e) => {
@@ -828,6 +1005,7 @@
             settings.eqBands[idx] = val;
             settings.eqPreset = 'custom';
             saveSettings();
+            applyDspSettings();
 
             col.querySelector('.ym-eq-badge').textContent = val > 0 ? `+${val}` : `${val}`;
             container.querySelectorAll('.ym-preset-chip').forEach(c => c.classList.remove('active'));
@@ -842,16 +1020,26 @@
               settings.eqBands = [...eqPresets[name]];
               settings.eqPreset = name;
               saveSettings();
-              renderEqTab();
+              applyDspSettings();
+
+              container.querySelectorAll('.ym-preset-chip').forEach(c => c.classList.toggle('active', c === chip));
+              container.querySelectorAll('.ym-eq-vertical-slider').forEach((sl, idx) => {
+                sl.value = settings.eqBands[idx];
+                const badge = sl.closest('.ym-eq-col').querySelector('.ym-eq-badge');
+                badge.textContent = settings.eqBands[idx] > 0 ? `+${settings.eqBands[idx]}` : `${settings.eqBands[idx]}`;
+              });
+              updateCurve();
             }
           });
         });
 
         const preampSlider = container.querySelector('.ym-preamp-slider');
+        const preampVal = container.querySelector('.ym-preamp-val');
         preampSlider.addEventListener('input', (e) => {
           settings.preamp = parseInt(e.target.value, 10);
           saveSettings();
-          container.querySelector('.ym-preamp-val').textContent = `${settings.preamp > 0 ? `+${settings.preamp}` : settings.preamp} dB`;
+          applyDspSettings();
+          preampVal.textContent = `${settings.preamp > 0 ? `+${settings.preamp}` : settings.preamp} dB`;
         });
 
         container.querySelector('.ym-reset-eq-btn').addEventListener('click', () => {
@@ -859,7 +1047,16 @@
           settings.eqPreset = 'flat';
           settings.preamp = 0;
           saveSettings();
-          renderEqTab();
+          applyDspSettings();
+
+          container.querySelectorAll('.ym-preset-chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-eq') === 'flat'));
+          container.querySelectorAll('.ym-eq-vertical-slider').forEach((sl) => {
+            sl.value = 0;
+            sl.closest('.ym-eq-col').querySelector('.ym-eq-badge').textContent = '0';
+          });
+          preampSlider.value = 0;
+          preampVal.textContent = '0 dB';
+          updateCurve();
         });
 
         tabBody.appendChild(container);
@@ -878,6 +1075,11 @@
       ];
 
       const renderCustomTab = () => {
+        if (activeVinylTimer) {
+          clearInterval(activeVinylTimer);
+          activeVinylTimer = null;
+        }
+        tabBody.innerHTML = '';
         const container = document.createElement('div');
         container.className = 'ym-tab-pane';
 
