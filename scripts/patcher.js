@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const RESET = '\x1b[0m';
@@ -32,6 +33,29 @@ function error(msg) {
 
 const INJECTION_TAG_START = '/* --- YANDEX MUSIC ENHANCER INJECTION START --- */';
 const INJECTION_TAG_END = '/* --- YANDEX MUSIC ENHANCER INJECTION END --- */';
+
+function killRunningApp() {
+  log('Checking for running instances of Yandex Music...');
+  if (process.platform === 'win32') {
+    const targets = ['Яндекс Музыка.exe', 'YandexMusic.exe', 'yandex-music.exe'];
+    for (const target of targets) {
+      try {
+        execSync(`taskkill /F /IM "${target}" >nul 2>nul`, { stdio: 'ignore' });
+      } catch (e) {}
+    }
+    try {
+      execSync('ping 127.0.0.1 -n 2 >nul', { stdio: 'ignore' });
+    } catch (e) {}
+  } else if (process.platform === 'linux') {
+    try {
+      execSync('killall -9 yandex-music yandex-music-electron 2>/dev/null', { stdio: 'ignore' });
+    } catch (e) {}
+  } else if (process.platform === 'darwin') {
+    try {
+      execSync('killall -9 "Yandex Music" 2>/dev/null', { stdio: 'ignore' });
+    } catch (e) {}
+  }
+}
 
 function getConfigDir(customConfigDir) {
   if (customConfigDir) return path.resolve(customConfigDir);
@@ -66,9 +90,13 @@ function findAppAsar(customAppPath) {
 
     candidates.push(
       path.join(localAppData, 'Programs', 'YandexMusic', 'resources', 'app.asar'),
+      path.join(localAppData, 'Programs', 'Яндекс Музыка', 'resources', 'app.asar'),
       path.join(programFiles, 'YandexMusic', 'resources', 'app.asar'),
+      path.join(programFiles, 'Яндекс Музыка', 'resources', 'app.asar'),
       path.join(programFilesX86, 'YandexMusic', 'resources', 'app.asar'),
-      path.join(localAppData, 'YandexMusic', 'resources', 'app.asar')
+      path.join(programFilesX86, 'Яндекс Музыка', 'resources', 'app.asar'),
+      path.join(localAppData, 'YandexMusic', 'resources', 'app.asar'),
+      path.join(localAppData, 'Яндекс Музыка', 'resources', 'app.asar')
     );
   } else if (process.platform === 'darwin') {
     candidates.push(
@@ -121,7 +149,7 @@ function setupYmEnhancer(win) {
 
   const hexToRgb = (hex, def = [15, 12, 15]) => {
     if (!hex) return def;
-    hex = hex.replace('#', '');
+    hex = String(hex).replace('#', '').trim();
     if (hex.length === 6) {
       return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
     }
@@ -190,9 +218,15 @@ function setupYmEnhancer(win) {
         } catch (e) {}
       }
 
+      const fontFaceRule = (font && !font.includes(','))
+        ? \`
+          @font-face { font-family: 'YS Text'; src: local('\${font}'); }
+          @font-face { font-family: 'YSMusic Headline'; src: local('\${font}'); }
+        \`
+        : '';
+
       const fullCss = \`
-        @font-face { font-family: 'YS Text'; src: local('\${font}'); }
-        @font-face { font-family: 'YSMusic Headline'; src: local('\${font}'); }
+        \${fontFaceRule}
         :root {
           --g-font-family-sans: '\${font}', sans-serif !important;
           --g-text-body-font-family: '\${font}', sans-serif !important;
@@ -250,6 +284,8 @@ function setupYmEnhancer(win) {
 
   win.webContents.on('did-finish-load', injectStyles);
   win.webContents.on('dom-ready', injectStyles);
+  win.webContents.on('did-navigate', injectStyles);
+  win.webContents.on('did-navigate-in-page', injectStyles);
 
   try {
     if (fs.existsSync(cssPath)) fs.watchFile(cssPath, { interval: 800 }, injectStyles);
@@ -351,13 +387,27 @@ function getPreloadInjection() {
   return `
 ${INJECTION_TAG_START}
 (() => {
+  if (typeof window !== 'undefined' && window !== window.top) return;
+
   try {
     const code = electron.ipcRenderer.sendSync('get-audio-hub-script');
     if (code) {
-      const fn = new Function('window', 'document', code);
-      fn(window, document);
-      if (typeof window.initAudioHub === 'function') {
-        window.initAudioHub();
+      const executeHub = () => {
+        try {
+          const fn = new Function('window', 'document', code);
+          fn(window, document);
+          if (typeof window.initAudioHub === 'function') {
+            window.initAudioHub();
+          }
+        } catch (err) {
+          console.error('[Enhancer] Failed to execute audio hub script:', err);
+        }
+      };
+
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', executeHub, { once: true });
+      } else {
+        executeHub();
       }
     }
   } catch (e) {
@@ -374,21 +424,147 @@ ${INJECTION_TAG_END}
 `;
 }
 
+// Built-in Pure Node.js ASAR extractor (zero external npm dependencies, instant speed)
+function extractAsarPure(asarPath, destDir) {
+  const fd = fs.openSync(asarPath, 'r');
+  try {
+    const buf = Buffer.alloc(16);
+    fs.readSync(fd, buf, 0, 16, 0);
+    const headerPayloadSize = buf.readUInt32LE(4);
+    const totalHeaderSize = 8 + headerPayloadSize;
+    const jsonLen = buf.readUInt32LE(12);
+    const jsonBuf = Buffer.alloc(jsonLen);
+    fs.readSync(fd, jsonBuf, 0, jsonLen, 16);
+    const header = JSON.parse(jsonBuf.toString('utf8'));
+
+    function extractDir(tree, currentDir) {
+      fs.mkdirSync(currentDir, { recursive: true });
+      for (const [name, node] of Object.entries(tree.files || {})) {
+        const fullPath = path.join(currentDir, name);
+        if (node.files) {
+          extractDir(node, fullPath);
+        } else {
+          const fileBuf = Buffer.alloc(node.size);
+          fs.readSync(fd, fileBuf, 0, node.size, totalHeaderSize + Number(node.offset));
+          fs.writeFileSync(fullPath, fileBuf);
+        }
+      }
+    }
+    extractDir(header, destDir);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+// Built-in Pure Node.js ASAR packer (zero external npm dependencies, instant speed)
+function packAsarPure(srcDir, destAsar) {
+  const fileList = [];
+  function walk(currentDir, relDir = '') {
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const ent of entries) {
+      const full = path.join(currentDir, ent.name);
+      const rel = relDir ? relDir + '/' + ent.name : ent.name;
+      if (ent.isDirectory()) {
+        walk(full, rel);
+      } else if (ent.isFile()) {
+        const stat = fs.statSync(full);
+        fileList.push({ full, rel, size: stat.size });
+      }
+    }
+  }
+  walk(srcDir);
+
+  const header = { files: {} };
+  let currentOffset = 0;
+  for (const f of fileList) {
+    const parts = f.rel.split('/');
+    let cur = header.files;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        cur[part] = { size: f.size, offset: String(currentOffset) };
+        currentOffset += f.size;
+      } else {
+        if (!cur[part]) cur[part] = { files: {} };
+        cur = cur[part].files;
+      }
+    }
+  }
+
+  const jsonStr = JSON.stringify(header);
+  const jsonBuf = Buffer.from(jsonStr, 'utf8');
+  const jsonLen = jsonBuf.length;
+  const padding = (4 - (jsonLen % 4)) % 4;
+  const headerPayloadSize = 8 + jsonLen + padding;
+
+  const headerBuf = Buffer.alloc(16 + jsonLen + padding);
+  headerBuf.writeUInt32LE(4, 0);
+  headerBuf.writeUInt32LE(headerPayloadSize, 4);
+  headerBuf.writeUInt32LE(headerPayloadSize - 4, 8);
+  headerBuf.writeUInt32LE(jsonLen, 12);
+  jsonBuf.copy(headerBuf, 16);
+
+  const outFd = fs.openSync(destAsar, 'w');
+  try {
+    fs.writeSync(outFd, headerBuf);
+
+    const chunkBuf = Buffer.alloc(1024 * 1024);
+    for (const f of fileList) {
+      const inFd = fs.openSync(f.full, 'r');
+      try {
+        let bytesRead = 0;
+        let pos = 0;
+        while ((bytesRead = fs.readSync(inFd, chunkBuf, 0, chunkBuf.length, pos)) > 0) {
+          fs.writeSync(outFd, chunkBuf, 0, bytesRead);
+          pos += bytesRead;
+        }
+      } finally {
+        fs.closeSync(inFd);
+      }
+    }
+  } finally {
+    fs.closeSync(outFd);
+  }
+}
+
 function extractAsar(asarPath, destDir) {
   log(`Extracting ${asarPath} to temporary directory...`);
   try {
-    execSync(`npx --yes asar extract "${asarPath}" "${destDir}"`, { stdio: 'inherit' });
+    extractAsarPure(asarPath, destDir);
+    return;
+  } catch (errPure) {
+    warn(`Pure JS extraction warning: ${errPure.message}. Attempting CLI fallback...`);
+  }
+
+  try {
+    execSync(`npx --yes @electron/asar extract "${asarPath}" "${destDir}"`, { stdio: 'inherit' });
   } catch (e) {
-    throw new Error(`Failed to extract asar archive: ${e.message}`);
+    try {
+      execSync(`npx --yes asar extract "${asarPath}" "${destDir}"`, { stdio: 'inherit' });
+    } catch (e2) {
+      throw new Error(`Failed to extract asar archive: ${e2.message}`);
+    }
   }
 }
 
 function packAsar(srcDir, asarPath) {
   log(`Repacking modified files to ${asarPath}...`);
   try {
-    execSync(`npx --yes asar pack "${srcDir}" "${asarPath}"`, { stdio: 'inherit' });
+    packAsarPure(srcDir, asarPath);
+    return;
+  } catch (errPure) {
+    warn(`Pure JS packing warning: ${errPure.message}. Attempting CLI fallback...`);
+  }
+
+  try {
+    execSync(`npx --yes @electron/asar pack "${srcDir}" "${asarPath}"`, { stdio: 'inherit' });
   } catch (e) {
-    throw new Error(`Failed to pack asar archive: ${e.message}`);
+    try {
+      execSync(`npx --yes asar pack "${srcDir}" "${asarPath}"`, { stdio: 'inherit' });
+    } catch (e2) {
+      throw new Error(`Failed to pack asar archive: ${e2.message}`);
+    }
   }
 }
 
@@ -450,7 +626,90 @@ function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function findAppExe(asarPath) {
+  if (process.platform !== 'win32') return null;
+  const appDir = path.dirname(path.dirname(asarPath));
+  const candidates = [
+    path.join(appDir, 'Яндекс Музыка.exe'),
+    path.join(appDir, 'YandexMusic.exe'),
+    path.join(appDir, 'yandex-music.exe')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  try {
+    const entries = fs.readdirSync(appDir);
+    for (const ent of entries) {
+      if (ent.endsWith('.exe') && !ent.toLowerCase().includes('uninstall') && !ent.toLowerCase().includes('elevate')) {
+        return path.join(appDir, ent);
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+function patchExeIntegrity(exePath, newAsarHash) {
+  if (!fs.existsSync(exePath)) return;
+  log(`Configuring Windows Electron executable: ${path.basename(exePath)}...`);
+
+  const backupExe = exePath + '.orig';
+  if (!fs.existsSync(backupExe)) {
+    log(`Creating safe backup at: ${backupExe}`);
+    fs.copyFileSync(exePath, backupExe);
+  }
+
+  let exeBuf = fs.readFileSync(exePath);
+  let modified = false;
+
+  // 1. Flip Electron Fuse: EnableEmbeddedAsarIntegrityValidation
+  const sentinel = Buffer.from('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX', 'utf8');
+  const fusePos = exeBuf.indexOf(sentinel);
+  if (fusePos !== -1) {
+    const fuse4Pos = fusePos + 38;
+    if (exeBuf[fuse4Pos] === 0x31) {
+      exeBuf[fuse4Pos] = 0x30;
+      modified = true;
+      log('Adjusted Electron Fuse: EnableEmbeddedAsarIntegrityValidation -> disabled');
+    }
+  }
+
+  // 2. Synchronize embedded SHA256 hash if present in executable resources
+  const integrityPrefix = Buffer.from('INTEGRITY', 'utf8');
+  const intPos = exeBuf.indexOf(integrityPrefix);
+  if (intPos !== -1) {
+    const searchSlice = exeBuf.slice(intPos, intPos + 500).toString('utf8');
+    const hashMatch = searchSlice.match(/[a-f0-9]{64}/i);
+    if (hashMatch) {
+      const oldHashPos = exeBuf.indexOf(hashMatch[0], intPos);
+      if (oldHashPos !== -1) {
+        if (exeBuf.slice(oldHashPos, oldHashPos + 64).toString('ascii') !== newAsarHash) {
+          exeBuf.write(newAsarHash, oldHashPos, 'ascii');
+          modified = true;
+          log(`Synchronized embedded SHA256 integrity hash in ${path.basename(exePath)}`);
+        }
+      }
+    }
+  }
+
+  if (modified) {
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        fs.writeFileSync(exePath, exeBuf);
+        break;
+      } catch (err) {
+        if (attempt === 6) throw err;
+        const end = Date.now() + 600;
+        while (Date.now() < end) {}
+      }
+    }
+  } else {
+    log(`Executable ${path.basename(exePath)} is already correctly configured`);
+  }
+}
+
 function install(options) {
+  killRunningApp();
+
   const asarPath = findAppAsar(options.appPath);
   if (!asarPath) {
     error('Could not find Yandex Music (app.asar)!');
@@ -507,6 +766,16 @@ function install(options) {
     extractAsar(asarPath, tmpDir);
     patchFiles(tmpDir);
     packAsar(tmpDir, asarPath);
+
+    if (process.platform === 'win32') {
+      const asarBytes = fs.readFileSync(asarPath);
+      const newAsarHash = crypto.createHash('sha256').update(asarBytes).digest('hex');
+      const exePath = findAppExe(asarPath);
+      if (exePath) {
+        patchExeIntegrity(exePath, newAsarHash);
+      }
+    }
+
     success('Yandex Music has been successfully patched with Enhancer v1.0.0!');
     log(`Restart Yandex Music to enjoy the new Glassmorphic theme & Audio Studio Hub.`);
   } finally {
@@ -517,6 +786,8 @@ function install(options) {
 }
 
 function restore(options) {
+  killRunningApp();
+
   const asarPath = findAppAsar(options.appPath);
   if (!asarPath) {
     error('Could not find Yandex Music app.asar to restore!');
@@ -531,6 +802,18 @@ function restore(options) {
 
   log(`Restoring pristine ${backupPath} -> ${asarPath}...`);
   fs.copyFileSync(backupPath, asarPath);
+
+  if (process.platform === 'win32') {
+    const exePath = findAppExe(asarPath);
+    if (exePath) {
+      const backupExe = exePath + '.orig';
+      if (fs.existsSync(backupExe)) {
+        log(`Restoring pristine ${backupExe} -> ${exePath}...`);
+        fs.copyFileSync(backupExe, exePath);
+      }
+    }
+  }
+
   success('Successfully restored original unpatched Yandex Music!');
 }
 
@@ -559,4 +842,16 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  findAppAsar,
+  getConfigDir,
+  extractAsarPure,
+  packAsarPure,
+  patchFiles,
+  install,
+  restore
+};

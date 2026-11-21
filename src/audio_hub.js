@@ -7,6 +7,10 @@
   'use strict';
 
   function initAudioHub() {
+    if (typeof window !== 'undefined') {
+      if (window.__ymAudioHubInitialized) return;
+      window.__ymAudioHubInitialized = true;
+    }
     const hasNode = typeof require === 'function';
     let fs = null, path = null, os = null, child_process = null, readline = null;
     if (hasNode) {
@@ -77,33 +81,34 @@
         }
       }
       const hueRot = Math.round((h - 38 + 360) % 360);
-      return `hue-rotate(${hueRot}deg) saturate(2.4)`;
+      return `hue-rotate(${hueRot}deg) saturate(1.35)`;
     };
 
     const applyVibeCloud = () => {
       if (typeof document === 'undefined' || !document.documentElement) return;
       const bri = (settings.vibeCloudBrightness || 90) / 100;
       let filterVal = 'none';
-      let bgVal = 'none';
+      let opacityVal = '0.95';
+      let bgVal = '';
 
       if (settings.vibeCloudMode === 'minimal') {
         filterVal = 'none';
         opacityVal = '0';
-        bgVal = '#050507';
+        bgVal = 'none';
       } else if (settings.vibeCloudMode === 'space') {
-        filterVal = 'grayscale(1) brightness(0.28) contrast(1.4)';
-        opacityVal = `${0.35 * bri}`;
-        bgVal = 'radial-gradient(circle at 50% 42%, rgba(20, 20, 32, 0.45) 0%, #030305 80%)';
+        filterVal = 'contrast(1.25) brightness(0.65)';
+        opacityVal = `${0.45 * bri}`;
+        bgVal = 'radial-gradient(circle at 50% 44%, rgba(18, 18, 34, 0.5) 0%, rgba(3, 3, 5, 0.95) 75%)';
       } else if (settings.vibeCloudMode === 'original') {
         filterVal = 'none';
         opacityVal = `${bri}`;
         bgVal = '';
       } else {
-        // 'theme' (default - strictly matches active theme)
+        // 'theme' (default - dynamic vibrant theme harmony)
         const tint = getFilterForTheme(settings.themeColor);
-        filterVal = `grayscale(1) sepia(1) ${tint} brightness(${0.95 * bri})`;
-        opacityVal = `${bri}`;
-        bgVal = `radial-gradient(circle at 50% 42%, ${hexToRgba(settings.themeColor, 0.22 * bri)} 0%, rgba(5, 5, 7, 0.96) 78%)`;
+        filterVal = `${tint} brightness(${0.98 * bri})`;
+        opacityVal = `${0.95 * bri}`;
+        bgVal = '';
       }
 
       document.documentElement.style.setProperty('--sys-vibe-filter', filterVal);
@@ -113,26 +118,37 @@
       } else {
         document.documentElement.style.removeProperty('--sys-vibe-bg');
       }
-
-      const canvases = document.querySelectorAll('[class*="VibeWidgetAnimation_root"] canvas, [class*="VibeAnimation_root"] canvas');
-      canvases.forEach(c => {
-        if (c.style.filter !== filterVal) c.style.filter = filterVal;
-        if (c.style.opacity !== opacityVal) c.style.opacity = opacityVal;
-      });
-
-      const layouts = document.querySelectorAll('[class*="DefaultLayout_rootNewVibe"]');
-      layouts.forEach(l => {
-        if (bgVal && l.style.background !== bgVal) l.style.background = bgVal;
-      });
     };
 
     // Apply custom theme variables
     const applyTheme = () => {
       if (typeof document !== 'undefined' && document.documentElement) {
-        document.documentElement.style.setProperty('--sys-primary', settings.themeColor);
-        document.documentElement.style.setProperty('--sys-glass-blur', `${settings.glassBlur}px`);
-        document.documentElement.style.setProperty('--sys-glass-opacity', (settings.glassOpacity / 100).toFixed(2));
+        const theme = settings.themeColor || '#ebbf89';
+        const docStyle = document.documentElement.style;
+        docStyle.setProperty('--sys-primary', theme, 'important');
+        docStyle.setProperty('--sys-primary-hover', theme, 'important');
+        docStyle.setProperty('--ym-controls-color-primary-default-enabled', theme, 'important');
+        docStyle.setProperty('--ym-controls-color-primary-default-hovered', theme, 'important');
+        docStyle.setProperty('--ym-controls-color-primary-outline-selected_stroke', theme, 'important');
+        docStyle.setProperty('--ym-slider-color-primary-enabled', theme, 'important');
+        docStyle.setProperty('--ym-slider-color-primary-progress', theme, 'important');
+        docStyle.setProperty('--ym-logo-color-primary-variant', theme, 'important');
+        docStyle.setProperty('--ym-logo-color-primary-player', theme, 'important');
+        docStyle.setProperty('--text-color-accent', theme, 'important');
+        docStyle.setProperty('--sys-glass-blur', `${settings.glassBlur || 20}px`, 'important');
+        docStyle.setProperty('--sys-glass-opacity', ((settings.glassOpacity || 75) / 100).toFixed(2), 'important');
         applyVibeCloud();
+
+        const hub = document.getElementById('ym-audio-hub-modal');
+        if (hub) {
+          hub.querySelectorAll('.ym-color-circle').forEach(b => {
+            b.classList.toggle('active', (b.getAttribute('data-hex') || '').toLowerCase() === theme.toLowerCase());
+          });
+          const svgPath = hub.querySelector('.ym-eq-stroke');
+          if (svgPath) svgPath.setAttribute('stroke', theme);
+          const stop0 = hub.querySelector('#ym-eq-grad-fill stop[offset="0%"]');
+          if (stop0) stop0.setAttribute('stop-color', theme);
+        }
       }
     };
     applyTheme();
@@ -214,19 +230,38 @@
       setTimeout(resizeCanvas, 50);
 
       const updatePlayingStatus = () => {
-        const playBtn = document.querySelector('[class*="VibePlayerControls_playButton"]') ||
-                        document.querySelector('[class*="PlayerBarDesktop_playButton"]') ||
-                        document.querySelector('[data-test-id="PLAY_BUTTON"]') ||
-                        document.querySelector('[class*="PlayerControls_playButton"]');
-        if (playBtn) {
-          const label = (playBtn.getAttribute('aria-label') || '').toLowerCase();
-          cachedPlaying = label.includes('пауз') || label.includes('pause') || !!playBtn.querySelector('[class*="Pause"]');
-        } else {
-          cachedPlaying = false;
+        let isPlaying = false;
+
+        // 1. Check HTML5 audio tag (100% reliable across all OS)
+        const audioEl = document.querySelector('audio');
+        if (audioEl) {
+          isPlaying = !audioEl.paused && !audioEl.ended && (audioEl.currentTime > 0 || audioEl.readyState > 2);
+        }
+
+        // 2. Play/Pause button detection fallback
+        if (!isPlaying) {
+          const playBtn = document.querySelector('[class*="VibePlayerControls_playButton"]') ||
+                          document.querySelector('[class*="PlayerBarDesktop_playButton"]') ||
+                          document.querySelector('[class*="VibePlayerBar_playButton"]') ||
+                          document.querySelector('[data-test-id="PLAY_BUTTON"]') ||
+                          document.querySelector('[class*="PlayerControls_playButton"]');
+          if (playBtn) {
+            const label = (playBtn.getAttribute('aria-label') || '').toLowerCase();
+            isPlaying = label.includes('пауз') || label.includes('pause') ||
+                        !!playBtn.querySelector('[class*="Pause"]') ||
+                        !!playBtn.querySelector('svg[data-icon*="pause"]');
+          }
+        }
+
+        cachedPlaying = isPlaying;
+        if (typeof document !== 'undefined' && document.body) {
+          document.body.classList.toggle('ym-vibe-playing', cachedPlaying);
         }
       };
-      setInterval(updatePlayingStatus, 400);
+      setInterval(updatePlayingStatus, 300);
       updatePlayingStatus();
+
+      const isPlayingMusic = () => cachedPlaying;
 
       const getCurrentTrackCover = () => {
         const coverImg = document.querySelector('[class*="AlbumCover_cover"] img') ||
@@ -236,24 +271,34 @@
       };
 
       const renderCava = (timestamp) => {
-        animId = requestAnimationFrame(renderCava);
-
         if (settings.cavaMode === 'hidden') {
-          if (cavaContainer.style.display !== 'none') cavaContainer.style.display = 'none';
+          if (cavaContainer && cavaContainer.style.display !== 'none') cavaContainer.style.display = 'none';
+          animId = setTimeout(() => requestAnimationFrame(renderCava), 400);
           return;
         }
 
-        if (document.hidden || !cachedWidth || !cachedHeight) return;
+        const vibeRoot = document.querySelector('[class*="VibePage_root"]');
+        const isOnVibe = !!vibeRoot && vibeRoot.offsetParent !== null;
 
-        // Cap frame rate to ~60 FPS (prevents running at 144Hz/240Hz which stresses GPU/CPU)
-        if (timestamp - lastFrameTime < 15) return;
+        if (document.hidden || !isOnVibe) {
+          if (cavaContainer && cavaContainer.style.display !== 'none') cavaContainer.style.display = 'none';
+          animId = setTimeout(() => requestAnimationFrame(renderCava), 250);
+          return;
+        }
+
+        animId = requestAnimationFrame(renderCava);
+
+        if (!cachedWidth || !cachedHeight) return;
+
+        // Cap frame rate to ~60 FPS
+        if (timestamp - lastFrameTime < 16) return;
         lastFrameTime = timestamp;
 
         if (cavaContainer.style.display !== 'block') cavaContainer.style.display = 'block';
 
         ctx.clearRect(0, 0, cachedWidth, cachedHeight);
 
-        phase += 0.04;
+        phase += 0.05;
 
         let maxVal = 0;
         for (let i = 0; i < NUM_BARS; i++) {
@@ -261,6 +306,10 @@
         }
 
         const barCount = Math.max(16, Math.min(64, settings.cavaBars || 36));
+        const audioEl = document.querySelector('audio');
+        const curTime = audioEl ? audioEl.currentTime : 0;
+        const beatPhase = (curTime * 9.2) + phase;
+        const sens = (settings.cavaSensitivity || 100) / 100;
 
         // Spring physics & smoothing for active bar count
         for (let i = 0; i < barCount; i++) {
@@ -274,21 +323,27 @@
             const secondary = Math.cos(phase * 0.6 + i * (6 / barCount)) * 0.5 + 0.5;
             target = (wave * 0.6 + secondary * 0.4) * 6;
           } else if (maxVal < 1) {
-            // High quality dynamic rhythm & harmonic spectrum simulation when CAVA is unavailable (e.g. Windows)
+            // Dynamic alive procedural spectrum when CAVA is unavailable (e.g. Windows)
             const normIdx = i / barCount;
-            const bassBeat = Math.pow(Math.max(0, Math.sin(phase * 2.2)), 3) * Math.max(0, 1 - normIdx * 1.5);
-            const midWave = (Math.sin(phase * 3.5 + i * 0.4) * 0.5 + 0.5) * (Math.sin(phase * 1.8 + i * 0.2) * 0.5 + 0.5);
-            const trebleShimmer = (Math.sin(phase * 5.1 + i * 0.8) * 0.5 + 0.5) * (normIdx * 0.8);
 
-            let simHeight = 12;
-            if (normIdx < 0.3) {
-              simHeight = 25 + bassBeat * 50 + Math.sin(phase * 1.5 + i * 0.3) * 15;
+            const kick = Math.pow(Math.max(0, Math.sin(beatPhase * 1.4)), 4) * 58;
+            const subBass = Math.sin(beatPhase * 0.7 + i * 0.45) * 18;
+
+            const midRhythm = (Math.sin(beatPhase * 2.8 + i * 0.35) * 0.5 + 0.5) * 42;
+            const harmony = Math.cos(beatPhase * 1.9 + i * 0.6) * 15;
+
+            const hiHat = Math.pow(Math.max(0, Math.sin(beatPhase * 3.8 + i * 0.8)), 3) * 34;
+
+            let simHeight = 15;
+            if (normIdx < 0.28) {
+              simHeight = 22 + (kick + subBass) * (1 - normIdx * 1.4);
             } else if (normIdx < 0.7) {
-              simHeight = 18 + midWave * 38 + Math.cos(phase * 2.1 + i * 0.5) * 12;
+              simHeight = 16 + midRhythm + harmony;
             } else {
-              simHeight = 10 + trebleShimmer * 28 + Math.sin(phase * 4.0 + i * 0.6) * 10;
+              simHeight = 10 + hiHat + Math.sin(beatPhase * 4.5 + i) * 8;
             }
-            target = Math.max(4, Math.min(95, simHeight));
+
+            target = Math.max(5, Math.min(98, simHeight * sens));
           }
 
           if (target > visualBars[i]) {
@@ -1167,8 +1222,9 @@
 
       // Periodic check for synced lyrics scrolling, track changes, button mounting and aura sync
       setInterval(() => {
-        mountPlayerLyricsBtn();
-        applyVibeCloud();
+        if (!document.getElementById('ym-lyrics-toggle-btn')) {
+          mountPlayerLyricsBtn();
+        }
 
         // Check if currently on Vibe page or in Fullscreen player
         const vibeRoot = document.querySelector('[class*="VibePage_root"]');
@@ -1213,9 +1269,13 @@
 
         if (!isSyncedLyrics || lyricsLines.length === 0) return;
 
-        const overlay = document.querySelector('[class*="VibePlayerbarMeta_timecodeOverlay"]');
+        const overlay = document.querySelector('[class*="VibePlayerbarMeta_timecodeOverlay"]') ||
+                        document.querySelector('[class*="VibePlayerbarTimecodeWithOverlay_timecode"]') ||
+                        document.querySelector('[class*="ChangeTimecode_timecode"]') ||
+                        document.querySelector('[class*="Timecode_"]') ||
+                        document.querySelector('[data-test-id*="timecode"]');
         if (!overlay || !overlay.textContent) return;
-        const m = overlay.textContent.match(/(\d{2}):(\d{2})/);
+        const m = overlay.textContent.match(/(\d{1,2}):(\d{2})/);
         if (!m) return;
         const curSec = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 
@@ -1248,7 +1308,7 @@
       // Add Lyrics button on Player Bar (слегка левее с запасом до кнопки «...»)
       const mountPlayerLyricsBtn = () => {
         const playerBar = document.querySelector('[class*="VibePlayerBar_root"]') ||
-                          document.querySelector('[class*="PlayerBarDesktop_root"]');
+                          document.querySelector('[class*="PlayerBarDesktop"]');
         if (!playerBar) return;
 
         let lyricsBtn = document.getElementById('ym-lyrics-toggle-btn');
@@ -1274,8 +1334,12 @@
         lyricsBtn.classList.toggle('active', document.body.classList.contains('ym-lyrics-mode-open'));
 
         const moreBtn = playerBar.querySelector('[class*="PlayerBarDesktop_moreButton"]') ||
+                        playerBar.querySelector('[class*="trackContextMenuIcon"]') ||
+                        playerBar.querySelector('[class*="settingsButton"]') ||
                         playerBar.querySelector('button[aria-label*="Действия"]') ||
                         playerBar.querySelector('button[aria-label*="меню"]') ||
+                        playerBar.querySelector('button[aria-label*="контекст"]') ||
+                        playerBar.querySelector('button[aria-label*="ещё"]') ||
                         playerBar.querySelector('button[data-test-id*="MORE"]');
         if (moreBtn && moreBtn.parentElement) {
           if (lyricsBtn.parentElement !== moreBtn.parentElement || lyricsBtn.nextElementSibling !== moreBtn) {
@@ -1361,9 +1425,10 @@
         obsExtraTimer = setTimeout(() => {
           obsExtraTimer = null;
           checkAndInjectContextMenuLyrics();
-          mountPlayerLyricsBtn();
-          applyVibeCloud();
-        }, 200);
+          if (!document.getElementById('ym-lyrics-toggle-btn')) {
+            mountPlayerLyricsBtn();
+          }
+        }, 500);
       };
 
       const obsExtra = new MutationObserver(debouncedObsExtra);
@@ -1382,19 +1447,25 @@
     // Attempt mounting immediately if ready
     let obs = null;
     function tryMount() {
-      if (mountUI() && obs) {
-        obs.disconnect();
-        obs = null;
+      if (mountUI()) {
+        if (obs) {
+          obs.disconnect();
+          obs = null;
+        }
+        return true;
       }
+      return false;
     }
     if (document.body) tryMount();
 
     // Observe document for React mounting VibePage only until mounted
     if (!document.getElementById('ym-audio-hub-root')) {
-      obs = new MutationObserver(() => tryMount());
-      obs.observe(document.documentElement, { childList: true, subtree: true });
+      const rootNode = document.documentElement || document;
+      if (rootNode) {
+        obs = new MutationObserver(() => tryMount());
+        obs.observe(rootNode, { childList: true, subtree: true });
+      }
     }
-
 
     // Cleanup on exit
     window.addEventListener('beforeunload', () => {
@@ -1409,5 +1480,12 @@
   if (typeof window !== 'undefined') {
     window.initAudioHub = initAudioHub;
   }
-  initAudioHub();
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => initAudioHub());
+    } else {
+      initAudioHub();
+    }
+  }
 })();
